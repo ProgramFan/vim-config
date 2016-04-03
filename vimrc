@@ -1,5 +1,5 @@
-set runtimepath+=~/.config/vim/bundle/neobundle.vim
-call neobundle#begin(expand('~/.config/vim/bundle'))
+set runtimepath+=~/.config/vim/bundles/neobundle.vim
+call neobundle#begin(expand('~/.config/vim/bundles'))
 NeoBundleFetch 'Shougo/neobundle.vim'
 NeoBundle 'Shougo/vimproc'
 NeoBundle 'Shougo/unite.vim'
