@@ -59,8 +59,8 @@ url=https://${GH_TOKEN}@github.com/Programfan/vim-config.git
 git clone ${url} -b $branch vim-packages
 echo "  Preparing package files ..."
 rm -rf vim-packages/*
+find ${HOME}/.config/vim/bundles -name .git | xargs rm -rf
 cp -rf ${HOME}/.config/vim/bundles/* vim-packages
-find vim-packages -name .git -delete
 echo "$(date +%Y-%m-%d@%H:%M:%S)" > vim-packages/VERSION
 cd vim-packages
 git config user.email "zyangmath@gmail.com"
