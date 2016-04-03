@@ -16,9 +16,9 @@ if [ $(git diff --name-only ${TRAVIS_COMMIT_RANGE} | grep "VERSION" | wc -l) -ge
   echo "VERSION changed, need package update."
 fi
 LIST_CHANGED=0
-if [ $(git diff --name-only ${TRAVIS_COMMIT_RANGE} | grep "vim-package-list.txt" | wc -l) -ge 1 ]; then
+if [ $(git diff --name-only ${TRAVIS_COMMIT_RANGE} | grep "vimrc" | wc -l) -ge 1 ]; then
   LIST_CHANGED=1
-  echo "vim-package-list.txt changed, need package update."
+  echo "vimrc changed, need package update."
 fi
 NEED_PACKAGE_UPDATE=0
 if [ $(($VERSION_CHANGED + $LIST_CHANGED)) -ge 1 ]; then
@@ -46,10 +46,7 @@ INSTALL_PACKAGES="$(cat ./vim-package-list.txt)"
 
 if [ "$INSTALL_PACKAGES" != "none" ]; then
   echo "Installing vim packages ..."
-  for pack in $INSTALL_PACKAGES ; do
-    vim -u ./vimrc "+NeoBundleDirectInstall '$pack'" "+q!"
-  done
-  rm -f ~/.config/vim/bundles/extra_bundles.vim
+  vim -u ./vimrc +NeoBundleInstall +q
 fi
 
 echo "Uploading packages ..."
