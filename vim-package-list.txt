@@ -1,1 +1,5 @@
+godlygeek/tabular
+dhruvasagar/vim-table-mode
+vim-pandoc/vim-pandoc-syntax
+vim-pandoc/vim-pandoc-after
 vim-pandoc/vim-pandoc
