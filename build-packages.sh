@@ -39,7 +39,7 @@ vim --version
 mkdir -p $HOME/.config/vim/bundles
 pushd $HOME/.config/vim/bundles &>/dev/null 
 git clone https://github.com/Shougo/neobundle.vim.git
-popd
+popd &>/dev/null
 
 # install vim packages
 INSTALL_PACKAGES="$(cat ./vim-package-list.txt)"
@@ -47,7 +47,7 @@ INSTALL_PACKAGES="$(cat ./vim-package-list.txt)"
 if [ "$INSTALL_PACKAGES" != "none" ]; then
   echo "Installing vim packages ..."
   for pack in $INSTALL_PACKAGES ; do
-    vim -c ./vimrc "+NeoBundleDirectInstall '$pack'" "+q!"
+    vim -u ./vimrc "+NeoBundleDirectInstall '$pack'" "+q!"
   done
   rm -f ~/.config/vim/bundles/extra_bundles.vim
 fi
