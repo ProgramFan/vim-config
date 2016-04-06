@@ -35,18 +35,17 @@ fi
 echo "Using Vim version:"
 vim --version
 
-# install NeoBundle
-mkdir -p $HOME/.config/vim/bundles
-pushd $HOME/.config/vim/bundles &>/dev/null 
-git clone https://github.com/Shougo/neobundle.vim.git
-popd &>/dev/null
+# install vim-plug
+mkdir -p $HOME/.vim/bundles
+curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+      https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
 # install vim packages
 INSTALL_PACKAGES="$(cat ./vim-package-list.txt)"
 
 if [ "$INSTALL_PACKAGES" != "none" ]; then
   echo "Installing vim packages ..."
-  vim -u ./vimrc +NeoBundleInstall +q
+  vim -u ./vimrc +PlugInstall +q
 fi
 
 echo "Uploading packages ..."
@@ -56,8 +55,8 @@ url=https://${GH_TOKEN}@github.com/Programfan/vim-config.git
 git clone ${url} -b $branch vim-packages
 echo "  Preparing package files ..."
 rm -rf vim-packages/*
-find ${HOME}/.config/vim/bundles -name .git | xargs rm -rf
-cp -rf ${HOME}/.config/vim/bundles/* vim-packages
+find ${HOME}/.vim/bundles -name .git | xargs rm -rf
+cp -rf ${HOME}/.vim/bundles/* vim-packages
 echo "$(date +%Y-%m-%d@%H:%M:%S)" > vim-packages/VERSION
 cd vim-packages
 git config user.email "zyangmath@gmail.com"

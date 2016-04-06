@@ -1,83 +1,71 @@
-set runtimepath+=~/.config/vim/bundles/neobundle.vim
-call neobundle#begin(expand('~/.config/vim/bundles'))
-NeoBundleFetch 'Shougo/neobundle.vim'
-NeoBundle 'Shougo/vimproc'
-NeoBundle 'Shougo/unite.vim'
-NeoBundle 'tpope/vim-fugitive'
-NeoBundle 'tpope/vim-surround'
-NeoBundle 'tpope/vim-repeat'
-NeoBundle 'tpope/vim-dispatch'
-NeoBundle 'tpope/vim-speeddating'
-NeoBundle 'tpope/vim-unimpaired'
-NeoBundle 'tpope/vim-sleuth'
-NeoBundle 'tpope/vim-eunuch'
-NeoBundle 'tpope/vim-sensible'
-NeoBundle 'majutsushi/tagbar'
-NeoBundle 'Raimondi/delimitMate'
+"
+" 00-plugins.vim: load plugins before any other settings
+"
 
-NeoBundle 'godlygeek/tabular'
-NeoBundle 'dhruvasagar/vim-table-mode'
-NeoBundle 'vim-pandoc/vim-pandoc-syntax'
-NeoBundle 'vim-pandoc/vim-pandoc-after'
-NeoBundle 'vim-pandoc/vim-pandoc'
+call plug#begin('~/.vim/bundles')
+
+Plug 'Shougo/unite.vim'
+Plug 'tpope/vim-fugitive'
+Plug 'tpope/vim-surround'
+Plug 'tpope/vim-repeat'
+Plug 'tpope/vim-dispatch'
+Plug 'tpope/vim-speeddating'
+Plug 'tpope/vim-unimpaired'
+Plug 'tpope/vim-sleuth'
+Plug 'tpope/vim-eunuch'
+Plug 'tpope/vim-sensible'
+Plug 'majutsushi/tagbar'
+Plug 'Raimondi/delimitMate'
+
+" Markdown: markdown writing environment with pandoc
+Plug 'godlygeek/tabular'
+Plug 'dhruvasagar/vim-table-mode'
+Plug 'vim-pandoc/vim-pandoc-syntax'
+Plug 'vim-pandoc/vim-pandoc-after'
+Plug 'vim-pandoc/vim-pandoc'
+Plug 'ProgramFan/vim-asciidoctor'
 
 " VimAirline: powerline replacement
-" Note: disabled in favor of unified powerline, but this is useful for inspur
-" or yh where python is slow and low version.
-" NeoBundle 'bling/vim-airline'
-NeoBundle 'edkolev/tmuxline.vim'
-NeoBundle 'edkolev/promptline.vim'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'edkolev/tmuxline.vim'
+Plug 'edkolev/promptline.vim'
 
-NeoBundle 'dahu/vimple'
-NeoBundle 'dahu/Asif'
-NeoBundle 'vim-scripts/SyntaxRange'
-NeoBundle 'ProgramFan/vim-asciidoctor'
 
 " vim for writers
-NeoBundle 'reedes/vim-pencil'
-NeoBundle 'reedes/vim-thematic'
-NeoBundle 'reedes/vim-wordy'
-NeoBundle 'reedes/vim-litecorrect'
-NeoBundle 'reedes/vim-wheel'
-NeoBundle 'junegunn/limelight.vim'
-NeoBundle 'junegunn/goyo.vim'
+Plug 'reedes/vim-pencil'
+Plug 'reedes/vim-thematic'
+Plug 'reedes/vim-wordy'
+Plug 'reedes/vim-litecorrect'
+Plug 'reedes/vim-wheel'
+Plug 'junegunn/limelight.vim'
+Plug 'junegunn/goyo.vim'
 
-NeoBundle 'nanotech/jellybeans.vim'
-NeoBundle 'junegunn/seoul256.vim'
-NeoBundle 'joshdick/onedark.vim'
-NeoBundle 'reedes/vim-colors-pencil'
-NeoBundle 'ProgramFan/vim-distinguished'
-" NeoBundle 'Chiel92/vim-autoformat'
+Plug 'jnurmine/Zenburn'
+Plug 'junegunn/seoul256.vim'
+Plug 'lloeki/vim-one-colorschemes'
+Plug 'Lokaltog/vim-distinguished'
 
 " YouCompleteMe: A super fast and versatile completer
-NeoBundle 'Valloric/YouCompleteMe'
+Plug 'Valloric/YouCompleteMe', {
+      \ 'for': ['c', 'cpp', 'python'],
+      \ 'do': './install.py --clang-completer' }
 
 " Syntastic: A nice syntax checker and static analysis tool
-NeoBundle 'scrooloose/syntastic'
-
-" Doxygen: C/C++ documentation system
-NeoBundle 'vim-scripts/DoxygenToolkit.vim'
-" python-mode: python ide support, currently only indent is used.
-NeoBundle 'klen/python-mode'
-NeoBundle 'leshill/vim-json'
-" NeoBundle 'vim-scripts/Superior-Haskell-Interaction-Mode-SHIM'
-NeoBundle 'SirVer/ultisnips'
+Plug 'scrooloose/syntastic'
+Plug 'vim-scripts/DoxygenToolkit.vim', { 'for': ['c', 'cpp'] }
+Plug 'klen/python-mode', { 'for': 'python' }
+Plug 'leshill/vim-json', { 'for': 'json' }
+Plug 'SirVer/ultisnips'
 
 " CodeFormat: code formatter/beautifier
-NeoBundle 'google/vim-maktaba'
-NeoBundle 'google/vim-glaive'
-NeoBundle 'google/vim-codefmt'
+Plug 'google/vim-maktaba'
+Plug 'google/vim-glaive'
+Plug 'google/vim-codefmt'
 
-NeoBundle 'GCBallesteros/vim-autocite'
-NeoBundle 'tomtom/tcomment_vim'
-NeoBundle 'junegunn/vim-easy-align'
-NeoBundle 'kchmck/vim-coffee-script'
+Plug 'GCBallesteros/vim-autocite'
+Plug 'tomtom/tcomment_vim'
+Plug 'junegunn/vim-easy-align'
+Plug 'kchmck/vim-coffee-script'
 
-NeoBundle 'airblade/vim-gitgutter'
-NeoBundle 'kana/vim-textobj-user'
-NeoBundle 'reedes/vim-textobj-sentence'
-NeoBundle 'glts/vim-textobj-comment'
-NeoBundle 'kana/vim-textobj-datetime'
-NeoBundle 'bps/vim-textobj-python'
-
-call neobundle#end()
+call plug#end()
