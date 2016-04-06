@@ -44,7 +44,7 @@ INSTALL_PACKAGES="$(cat ./vimrc)"
 
 if [ "$INSTALL_PACKAGES" != "none" ]; then
   echo "Installing vim packages ..."
-  vim -u ./vimrc +PlugInstall +q
+  vim -u ./vimrc +PlugInstall "+qa!"
 fi
 
 echo "Uploading packages ..."
