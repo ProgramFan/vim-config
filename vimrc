@@ -47,9 +47,7 @@ Plug 'lloeki/vim-one-colorschemes'
 Plug 'Lokaltog/vim-distinguished'
 
 " YouCompleteMe: A super fast and versatile completer
-Plug 'Valloric/YouCompleteMe', {
-      \ 'for': ['c', 'cpp', 'python'],
-      \ 'do': './install.py --clang-completer' }
+Plug 'Valloric/YouCompleteMe'
 
 " Syntastic: A nice syntax checker and static analysis tool
 Plug 'scrooloose/syntastic'
