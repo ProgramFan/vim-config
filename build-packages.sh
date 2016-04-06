@@ -40,8 +40,7 @@ mkdir -p $HOME/.vim/bundles
 curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
       https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
-# install vim packages
-INSTALL_PACKAGES="$(cat ./vim-package-list.txt)"
+INSTALL_PACKAGES="$(cat ./vimrc)"
 
 if [ "$INSTALL_PACKAGES" != "none" ]; then
   echo "Installing vim packages ..."
