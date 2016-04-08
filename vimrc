@@ -14,6 +14,7 @@ Plug 'tpope/vim-unimpaired'
 Plug 'tpope/vim-sleuth'
 Plug 'tpope/vim-eunuch'
 Plug 'tpope/vim-sensible'
+Plug 'tpope/vim-jdaddy'
 Plug 'majutsushi/tagbar'
 Plug 'Raimondi/delimitMate'
 
