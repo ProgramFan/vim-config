@@ -44,8 +44,9 @@ Plug 'junegunn/goyo.vim'
 
 Plug 'jnurmine/Zenburn'
 Plug 'junegunn/seoul256.vim'
-Plug 'lloeki/vim-one-colorschemes'
 Plug 'Lokaltog/vim-distinguished'
+Plug 'joshdick/onedark.vim'
+Plug 'joshdick/airline-onedark.vim'
 
 " YouCompleteMe: A super fast and versatile completer
 Plug 'Valloric/YouCompleteMe'
