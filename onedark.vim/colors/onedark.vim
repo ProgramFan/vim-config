@@ -1,6 +1,6 @@
 " Vim Color File
 " Name:       onedark.vim
-" Version:    1.43
+" Version:    1.45
 " Maintainer: https://github.com/joshdick/onedark.vim/
 " License:    The MIT License (MIT)
 " Based On:   https://github.com/MaxSt/FlatColor/
@@ -164,7 +164,7 @@ call s:h("PmenuSel", { "bg": s:visual_grey }) " Popup menu: selected item.
 call s:h("PmenuSbar", { "bg": s:visual_grey }) " Popup menu: scrollbar.
 call s:h("PmenuThumb", { "bg": s:white }) " Popup menu: Thumb of the scrollbar.
 call s:h("Question", { "fg": s:purple }) " hit-enter prompt and yes/no questions
-call s:h("Search", { "bg": s:visual_grey }) " Last search pattern highlighting (see 'hlsearch'). Also used for highlighting the current line in the quickfix window and similar items that need to stand out.
+call s:h("Search", { "fg": s:visual_black, "bg": s:visual_grey }) " Last search pattern highlighting (see 'hlsearch'). Also used for highlighting the current line in the quickfix window and similar items that need to stand out.
 call s:h("SpecialKey", { "fg": s:special_grey }) " Meta and special keys listed with ":map", also for text used to show unprintable characters in the text, 'listchars'. Generally: text that is displayed differently from what it really is.
 call s:h("SpellBad", { "fg": s:red }) " Word that is not recognized by the spellchecker. This will be combined with the highlighting used otherwise.
 call s:h("SpellCap", { "fg": s:dark_yellow }) " Word that should start with a capital. This will be combined with the highlighting used otherwise.
@@ -205,6 +205,10 @@ call s:h("GitGutterAdd", { "fg": s:green, "bg": s:gutter_bg_grey })
 call s:h("GitGutterDelete", { "fg": s:red, "bg": s:gutter_bg_grey })
 call s:h("GitGutterChange", { "fg": s:yellow, "bg": s:gutter_bg_grey })
 call s:h("GitGutterChangeDelete", { "fg": s:red, "bg": s:gutter_bg_grey })
+
+" Fugitive
+call s:h("diffAdded", { "fg": s:green })
+call s:h("diffRemoved", { "fg": s:red })
 
 " +------------------+
 " | Git Highlighting |

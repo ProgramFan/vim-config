@@ -41,8 +41,8 @@ function! airline#themes#onedark#refresh()
   let g:airline#themes#onedark#palette.visual_modified = g:airline#themes#onedark#palette.normal_modified
 
   let s:IA1 = airline#themes#get_highlight2(['Normal', 'bg'], ['Normal', 'fg'])
-  let s:IA2 = s:N2
-  let s:IA3 = airline#themes#get_highlight('Normal')
+  let s:IA2 = airline#themes#get_highlight2(['Normal', 'fg'], ['Search', 'bg'])
+  let s:IA3 = s:N2
   let g:airline#themes#onedark#palette.inactive = airline#themes#generate_color_map(s:IA1, s:IA2, s:IA3)
   let g:airline#themes#onedark#palette.inactive_modified = {
         \ 'airline_c': [ group[0], '', group[2], '', '' ]
