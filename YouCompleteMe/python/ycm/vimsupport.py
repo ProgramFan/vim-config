@@ -30,7 +30,7 @@ import tempfile
 import json
 import re
 from collections import defaultdict
-from ycmd.utils import ToUnicode
+from ycmd.utils import ToUnicode, ToBytes
 from ycmd import user_options_store
 
 BUFFER_COMMAND_MAP = { 'same-buffer'      : 'edit',
@@ -232,7 +232,7 @@ def AddDiagnosticSyntaxMatch( line_num,
 
 
 # Clamps the line and column numbers so that they are not past the contents of
-# the buffer. Numbers are 1-based.
+# the buffer. Numbers are 1-based byte offsets.
 def LineAndColumnNumbersClamped( line_num, column_num ):
   new_line_num = line_num
   new_column_num = column_num
@@ -294,27 +294,8 @@ def ConvertDiagnosticsToQfList( diagnostics ):
   return [ ConvertDiagnosticToQfFormat( x ) for x in diagnostics ]
 
 
-# Given a dict like {'a': 1}, loads it into Vim as if you ran 'let g:a = 1'
-# When |overwrite| is True, overwrites the existing value in Vim.
-def LoadDictIntoVimGlobals( new_globals, overwrite = True ):
-  extend_option = '"force"' if overwrite else '"keep"'
-
-  # We need to use json.dumps because that won't use the 'u' prefix on strings
-  # which Vim would bork on.
-  vim.eval( 'extend( g:, {0}, {1})'.format( json.dumps( new_globals ),
-                                            extend_option ) )
-
-
-# Changing the returned dict will NOT change the value in Vim.
-def GetReadOnlyVimGlobals( force_python_objects = False ):
-  if force_python_objects:
-    return vim.eval( 'g:' )
-
-  try:
-    # vim.vars is fairly new so it might not exist
-    return vim.vars
-  except:
-    return vim.eval( 'g:' )
+def GetVimGlobalsKeys():
+  return vim.eval( 'keys( g: )' )
 
 
 def VimExpressionToPythonType( vim_expression ):
@@ -491,8 +472,8 @@ def EchoTextVimWidth( text ):
 
   EchoText( truncated_text, False )
 
-  vim.command( 'let &ruler = {0}'.format( old_ruler ) )
-  vim.command( 'let &showcmd = {0}'.format( old_showcmd ) )
+  SetVariableValue( '&ruler', old_ruler )
+  SetVariableValue( '&showcmd', old_showcmd )
 
 
 def EscapeForVim( text ):
@@ -514,7 +495,7 @@ def VariableExists( variable ):
 
 
 def SetVariableValue( variable, value ):
-  vim.command( "let {0} = '{1}'".format( variable, EscapeForVim( value ) ) )
+  vim.command( "let {0} = {1}".format( variable, json.dumps( value ) ) )
 
 
 def GetVariableValue( variable ):
@@ -709,6 +690,9 @@ def ReplaceChunksInBuffer( chunks, vim_buffer, locations ):
 #
 # returns the delta (in lines and characters) that any position after the end
 # needs to be adjusted by.
+#
+# NOTE: Works exclusively with bytes() instances and byte offsets as returned
+# by ycmd and used within the Vim buffers
 def ReplaceChunk( start, end, replacement_text, line_delta, char_delta,
                   vim_buffer, locations = None ):
   # ycmd's results are all 1-based, but vim's/python's are all 0-based
@@ -722,9 +706,11 @@ def ReplaceChunk( start, end, replacement_text, line_delta, char_delta,
   if source_lines_count == 1:
     end_column += char_delta
 
-  replacement_lines = replacement_text.splitlines( False )
+  # NOTE: replacement_text is unicode, but all our offsets are byte offsets,
+  # so we convert to bytes
+  replacement_lines = ToBytes( replacement_text ).splitlines( False )
   if not replacement_lines:
-    replacement_lines = [ '' ]
+    replacement_lines = [ bytes( b'' ) ]
   replacement_lines_count = len( replacement_lines )
 
   end_existing_text = vim_buffer[ end_line ][ end_column : ]
@@ -851,7 +837,9 @@ def WriteToPreviewWindow( message ):
 def CheckFilename( filename ):
   """Check if filename is openable."""
   try:
-    open( filename ).close()
+    # We don't want to check for encoding issues when trying to open the file
+    # so we open it in binary mode.
+    open( filename, mode = 'rb' ).close()
   except TypeError:
     raise RuntimeError( "'{0}' is not a valid filename".format( filename ) )
   except IOError as error:
