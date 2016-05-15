@@ -13,7 +13,7 @@ function! airline#themes#onedark#refresh()
         \ }
 
   let s:N1 = airline#themes#get_highlight2(['Normal', 'bg'], ['String', 'fg'])
-  let s:N2 = airline#themes#get_highlight2(['Normal', 'fg'], ['CursorLine', 'bg'])
+  let s:N2 = airline#themes#get_highlight('Pmenu')
   let s:N3 = airline#themes#get_highlight('String')
   let g:airline#themes#onedark#palette.normal = airline#themes#generate_color_map(s:N1, s:N2, s:N3)
 
@@ -41,7 +41,7 @@ function! airline#themes#onedark#refresh()
   let g:airline#themes#onedark#palette.visual_modified = g:airline#themes#onedark#palette.normal_modified
 
   let s:IA1 = airline#themes#get_highlight2(['Normal', 'bg'], ['Normal', 'fg'])
-  let s:IA2 = airline#themes#get_highlight2(['Normal', 'fg'], ['Search', 'bg'])
+  let s:IA2 = airline#themes#get_highlight2(['Normal', 'fg'], ['Visual', 'bg'])
   let s:IA3 = s:N2
   let g:airline#themes#onedark#palette.inactive = airline#themes#generate_color_map(s:IA1, s:IA2, s:IA3)
   let g:airline#themes#onedark#palette.inactive_modified = {
