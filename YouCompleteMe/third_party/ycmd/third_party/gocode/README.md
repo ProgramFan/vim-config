@@ -1,6 +1,6 @@
 ## An autocompletion daemon for the Go programming language
 
-Gocode is a helper tool which is intended to be integrated with your source code editor, like vim and emacs. It provides several advanced capabilities, which currently includes:
+Gocode is a helper tool which is intended to be integrated with your source code editor, like vim, neovim and emacs. It provides several advanced capabilities, which currently includes:
 
  - Context-sensitive autocompletion
 
@@ -36,7 +36,9 @@ Also watch the [demo screencast](http://nosmileface.ru/images/gocode-demo.swf).
 
 ### Vim setup
 
-#### Manual installation
+#### Vim manual installation
+
+Note: As of go 1.5 there is no $GOROOT/misc/vim script. Suggested installation is via [vim-go plugin](https://github.com/fatih/vim-go).
 
 In order to install vim scripts, you need to fulfill the following steps:
 
@@ -72,7 +74,7 @@ In order to install vim scripts, you need to fulfill the following steps:
 
  4. Autocompletion should work now. Use `<C-x><C-o>` for autocompletion (omnifunc autocompletion).
 
-#### Using Vundle
+#### Using Vundle in Vim
 
 Add the following line to your **.vimrc**:
 
@@ -80,7 +82,7 @@ Add the following line to your **.vimrc**:
 
 And then update your packages by running `:PluginInstall`.
 
-#### Using vim-plug
+#### Using vim-plug in Vim
 
 Add the following line to your **.vimrc**:
 
@@ -91,6 +93,27 @@ And then update your packages by running `:PlugInstall`.
 #### Other
 
 Alternatively take a look at the vundle/pathogen friendly repo: https://github.com/Blackrush/vim-gocode.
+
+### Neovim setup
+#### Neovim manual installation
+
+ Neovim users should also follow `Vim manual installation`, except that you should goto `gocode/nvim` in step 2, and remember that, the Neovim configuration file is `~/.config/nvim/init.vim`.
+
+#### Using Vundle in Neovim
+
+Add the following line to your **init.vim**:
+
+`Plugin 'nsf/gocode', {'rtp': 'nvim/'}`
+
+And then update your packages by running `:PluginInstall`.
+
+#### Using vim-plug in Neovim
+
+Add the following line to your **init.vim**:
+
+`Plug 'nsf/gocode', { 'rtp': 'nvim', 'do': '~/.config/nvim/plugged/gocode/nvim/symlink.sh' }`
+
+And then update your packages by running `:PlugInstall`.
 
 ### Emacs setup
 

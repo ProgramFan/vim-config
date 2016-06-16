@@ -77,16 +77,12 @@ class JediCompleter( Completer ):
 
   def _UpdatePythonBinary( self, binary ):
     if binary:
-      if not self._CheckBinaryExists( binary ):
+      resolved_binary = utils.FindExecutable( binary )
+      if not resolved_binary:
         msg = BINARY_NOT_FOUND_MESSAGE.format( binary )
         self._logger.error( msg )
         raise RuntimeError( msg )
-      self._python_binary_path = binary
-
-
-  def _CheckBinaryExists( self, binary ):
-    """This method is here to help testing"""
-    return os.path.isfile( binary )
+      self._python_binary_path = resolved_binary
 
 
   def SupportedFiletypes( self ):
@@ -162,6 +158,7 @@ class JediCompleter( Completer ):
         command = [ self._python_binary_path,
                     PATH_TO_JEDIHTTP,
                     '--port', str( self._jedihttp_port ),
+                    '--log', self._GetLoggingLevel(),
                     '--hmac-file-secret', hmac_file.name ]
 
       self._logfile_stdout = LOG_FILENAME_FORMAT.format(
@@ -178,6 +175,13 @@ class JediCompleter( Completer ):
 
   def _GenerateHmacSecret( self ):
     return os.urandom( HMAC_SECRET_LENGTH )
+
+
+  def _GetLoggingLevel( self ):
+    # Tests are run with the NOTSET logging level but JediHTTP only accepts the
+    # predefined levels above (DEBUG, INFO, WARNING, etc.).
+    log_level = max( self._logger.getEffectiveLevel(), logging.DEBUG )
+    return logging.getLevelName( log_level ).lower()
 
 
   def _GetResponse( self, handler, request_data = {} ):
