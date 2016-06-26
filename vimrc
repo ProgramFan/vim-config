@@ -58,7 +58,7 @@ Plug 'klen/python-mode', { 'for': 'python' }
 Plug 'leshill/vim-json', { 'for': 'json' }
 Plug 'SirVer/ultisnips'
 
-Plug 'Chiel92/vim-codeformat'
+Plug 'Chiel92/vim-autoformat'
 
 Plug 'GCBallesteros/vim-autocite'
 Plug 'tomtom/tcomment_vim'
