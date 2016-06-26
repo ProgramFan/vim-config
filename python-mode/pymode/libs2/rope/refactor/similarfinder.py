@@ -2,11 +2,9 @@
 import re
 
 import rope.refactor.wildcards
-from rope.base import libutils
-from rope.base import codeanalyze, exceptions, ast, builtins
-from rope.refactor import (patchedast, wildcards)
-
-from rope.refactor.patchedast import MismatchedTokenError
+from rope.base import codeanalyze, evaluate, exceptions, ast, builtins
+from rope.refactor import (patchedast, sourceutils, occurrences,
+                           wildcards, importutils)
 
 
 class BadNameInCheckError(exceptions.RefactoringError):
@@ -24,12 +22,8 @@ class SimilarFinder(object):
     def __init__(self, pymodule, wildcards=None):
         """Construct a SimilarFinder"""
         self.source = pymodule.source_code
-        try:
-            self.raw_finder = RawSimilarFinder(
-                pymodule.source_code, pymodule.get_ast(), self._does_match)
-        except MismatchedTokenError:
-            print "in file %s" % pymodule.resource.path
-            raise
+        self.raw_finder = RawSimilarFinder(
+            pymodule.source_code, pymodule.get_ast(), self._does_match)
         self.pymodule = pymodule
         if wildcards is None:
             self.wildcards = {}
@@ -47,7 +41,7 @@ class SimilarFinder(object):
         if 'skip' in args.get('', {}):
             resource, region = args['']['skip']
             if resource == self.pymodule.get_resource():
-                skip_region = region
+                skip_region = region            
         return self.raw_finder.get_matches(code, start=start, end=end,
                                            skip=skip_region)
 
@@ -103,7 +97,7 @@ class RawSimilarFinder(object):
             if start <= match_start and match_end <= end:
                 if skip is not None and (skip[0] < match_end and
                                          skip[1] > match_start):
-                    continue
+                    continue                    
                 yield match
 
     def _get_matched_asts(self, code):
@@ -181,8 +175,8 @@ class _ASTMatcher(object):
 
     def _match_nodes(self, expected, node, mapping):
         if isinstance(expected, ast.Name):
-            if self.ropevar.is_var(expected.id):
-                return self._match_wildcard(expected, node, mapping)
+           if self.ropevar.is_var(expected.id):
+               return self._match_wildcard(expected, node, mapping)
         if not isinstance(expected, ast.AST):
             return expected == node
         if expected.__class__ != node.__class__:
@@ -302,8 +296,8 @@ class CodeTemplate(object):
     def _get_pattern(cls):
         if cls._match_pattern is None:
             pattern = codeanalyze.get_comment_pattern() + '|' + \
-                codeanalyze.get_string_pattern() + '|' + \
-                r'(?P<name>\$\{[^\s\$\}]*\})'
+                      codeanalyze.get_string_pattern() + '|' + \
+                      r'(?P<name>\$\{[^\s\$\}]*\})'
             cls._match_pattern = re.compile(pattern)
         return cls._match_pattern
 
@@ -345,7 +339,6 @@ class _RopeVariable(object):
 def make_pattern(code, variables):
     variables = set(variables)
     collector = codeanalyze.ChangeCollector(code)
-
     def does_match(node, name):
         return isinstance(node, ast.Name) and node.id == name
     finder = RawSimilarFinder(code, does_match=does_match)
@@ -359,12 +352,11 @@ def make_pattern(code, variables):
 
 def _pydefined_to_str(pydefined):
     address = []
-    if isinstance(pydefined,
-                  (builtins.BuiltinClass, builtins.BuiltinFunction)):
+    if isinstance(pydefined, (builtins.BuiltinClass, builtins.BuiltinFunction)):
         return '__builtins__.' + pydefined.get_name()
     else:
         while pydefined.parent is not None:
             address.insert(0, pydefined.get_name())
             pydefined = pydefined.parent
-        module_name = libutils.modname(pydefined.resource)
+        module_name = pydefined.pycore.modname(pydefined.resource)
     return '.'.join(module_name.split('.') + address)

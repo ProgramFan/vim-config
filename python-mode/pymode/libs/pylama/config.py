@@ -1,8 +1,8 @@
 """ Parse arguments from command line and configuration files. """
 import fnmatch
-import os
 import sys
-import re
+import os
+from re import compile as re
 
 import logging
 from argparse import ArgumentParser
@@ -11,23 +11,21 @@ from . import __version__
 from .libs.inirama import Namespace
 from .lint.extensions import LINTERS
 
-#: A default checkers
-DEFAULT_LINTERS = 'pep8', 'pyflakes', 'mccabe'
-
-CURDIR = os.getcwd()
-CONFIG_FILES = 'pylama.ini', 'setup.cfg', 'tox.ini', 'pytest.ini'
-
-#: The skip pattern
-SKIP_PATTERN = re.compile(r'# *noqa\b', re.I).search
-
-# Parse a modelines
-MODELINE_RE = re.compile(r'^\s*#\s+(?:pylama:)\s*((?:[\w_]*=[^:\n\s]+:?)+)', re.I | re.M)
 
 # Setup a logger
 LOGGER = logging.getLogger('pylama')
 LOGGER.propagate = False
 STREAM = logging.StreamHandler(sys.stdout)
 LOGGER.addHandler(STREAM)
+
+#: A default checkers
+DEFAULT_LINTERS = 'pep8', 'pyflakes', 'mccabe'
+
+CURDIR = os.getcwd()
+CONFIG_FILES = [
+    os.path.join(CURDIR, basename) for basename in
+    ('pylama.ini', 'setup.cfg', 'tox.ini', 'pytest.ini')
+]
 
 
 class _Default(object):
@@ -71,8 +69,8 @@ def parse_linters(linters):
 
 PARSER = ArgumentParser(description="Code audit tool for python.")
 PARSER.add_argument(
-    "paths", nargs='*', default=_Default([CURDIR]),
-    help="Paths to files or directories for code check.")
+    "path", nargs='?', default=_Default(CURDIR),
+    help="Path on file or directory for code check.")
 
 PARSER.add_argument(
     "--verbose", "-v", action='store_true', help="Verbose mode.")
@@ -88,9 +86,6 @@ PARSER.add_argument(
     "--select", "-s", default=_Default(''), type=split_csp_str,
     help="Select errors and warnings. (comma-separated list)")
 
-PARSER.add_argument(
-    "--sort", default=_Default(''), type=split_csp_str,
-    help="Sort result by error types. Ex. E,W,D")
 
 PARSER.add_argument(
     "--linters", "-l", default=_Default(','.join(DEFAULT_LINTERS)),
@@ -105,7 +100,7 @@ PARSER.add_argument(
 
 PARSER.add_argument(
     "--skip", default=_Default(''),
-    type=lambda s: [re.compile(fnmatch.translate(p)) for p in s.split(',') if p],
+    type=lambda s: [re(fnmatch.translate(p)) for p in s.split(',') if p],
     help="Skip files by masks (comma-separated, Ex. */messages.py)")
 
 PARSER.add_argument("--report", "-r", help="Send report to file [REPORT]")
@@ -125,15 +120,11 @@ PARSER.add_argument(
     "--force", "-F", action='store_true', default=_Default(False),
     help="Force code checking (if linter doesnt allow)")
 
-PARSER.add_argument(
-    "--abspath", "-a", action='store_true', default=_Default(False),
-    help="Use absolute paths in output.")
-
 
 ACTIONS = dict((a.dest, a) for a in PARSER._actions)
 
 
-def parse_options(args=None, config=True, rootdir=CURDIR, **overrides): # noqa
+def parse_options(args=None, config=True, **overrides): # noqa
     """ Parse options from command line and configuration files.
 
     :return argparse.Namespace:
@@ -145,7 +136,7 @@ def parse_options(args=None, config=True, rootdir=CURDIR, **overrides): # noqa
     # Parse args from command string
     options = PARSER.parse_args(args)
     options.file_params = dict()
-    options.linters_params = dict()
+    options.linter_params = dict()
 
     # Override options
     for k, v in overrides.items():
@@ -155,13 +146,11 @@ def parse_options(args=None, config=True, rootdir=CURDIR, **overrides): # noqa
 
     # Compile options from ini
     if config:
-        cfg = get_config(str(options.options), rootdir=rootdir)
+        cfg = get_config(str(options.options))
         for k, v in cfg.default.items():
             LOGGER.info('Find option %s (%s)', k, v)
             passed_value = getattr(options, k, _Default())
             if isinstance(passed_value, _Default):
-                if k == 'paths':
-                    v = v.split()
                 setattr(options, k, _Default(v))
 
         # Parse file related options
@@ -176,10 +165,10 @@ def parse_options(args=None, config=True, rootdir=CURDIR, **overrides): # noqa
             name = name[7:]
 
             if name in LINTERS:
-                options.linters_params[name] = dict(opts)
+                options.linter_params[name] = dict(opts)
                 continue
 
-            mask = re.compile(fnmatch.translate(name))
+            mask = re(fnmatch.translate(name))
             options.file_params[mask] = dict(opts)
 
     # Postprocess options
@@ -187,10 +176,6 @@ def parse_options(args=None, config=True, rootdir=CURDIR, **overrides): # noqa
     for name, value in opts.items():
         if isinstance(value, _Default):
             setattr(options, name, process_value(name, value.value))
-
-    if options.async and 'pylint' in options.linters:
-        LOGGER.warn('Cant parse code asynchronously while pylint is enabled.')
-        options.async = False
 
     return options
 
@@ -210,7 +195,7 @@ def process_value(name, value):
     return value
 
 
-def get_config(ini_path=None, rootdir=CURDIR):
+def get_config(ini_path=None):
     """ Load configuration from INI.
 
     :return Namespace:
@@ -221,7 +206,6 @@ def get_config(ini_path=None, rootdir=CURDIR):
 
     if not ini_path:
         for path in CONFIG_FILES:
-            path = os.path.join(rootdir, path)
             if os.path.isfile(path) and os.access(path, os.R_OK):
                 config.read(path)
     else:
@@ -238,4 +222,4 @@ def setup_logger(options):
         LOGGER.addHandler(logging.FileHandler(options.report, mode='w'))
     LOGGER.info('Try to read configuration from: ' + options.options)
 
-# pylama:ignore=W0212,D210,F0001
+# pylama:ignore=W0212

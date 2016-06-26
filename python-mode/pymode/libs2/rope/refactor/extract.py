@@ -12,7 +12,7 @@ from rope.refactor import (sourceutils, similarfinder,
 #
 # _ExtractInfo: holds information about the refactoring; it is passed
 # to the parts that need to have information about the refactoring
-#
+# 
 # _ExtractCollector: merely saves all of the information necessary for
 # performing the refactoring.
 #
@@ -36,6 +36,7 @@ class _ExtractRefactoring(object):
     def __init__(self, project, resource, start_offset, end_offset,
                  variable=False):
         self.project = project
+        self.pycore = project.pycore
         self.resource = resource
         self.start_offset = self._fix_start(resource.read(), start_offset)
         self.end_offset = self._fix_end(resource.read(), end_offset)
@@ -94,9 +95,9 @@ class _ExtractInfo(object):
 
     def __init__(self, project, resource, start, end, new_name,
                  variable, similar, make_global):
-        self.project = project
+        self.pycore = project.pycore
         self.resource = resource
-        self.pymodule = project.get_pymodule(resource)
+        self.pymodule = self.pycore.resource_to_pyobject(resource)
         self.global_scope = self.pymodule.get_scope()
         self.source = self.pymodule.source_code
         self.lines = self.pymodule.lines
@@ -152,8 +153,8 @@ class _ExtractInfo(object):
     @property
     def one_line(self):
         return self.region != self.lines_region and \
-            (self.logical_lines.logical_line_in(self.region_lines[0]) ==
-             self.logical_lines.logical_line_in(self.region_lines[1]))
+               (self.logical_lines.logical_line_in(self.region_lines[0]) ==
+                self.logical_lines.logical_line_in(self.region_lines[1]))
 
     @property
     def global_(self):
@@ -162,7 +163,7 @@ class _ExtractInfo(object):
     @property
     def method(self):
         return self.scope.parent is not None and \
-            self.scope.parent.get_kind() == 'Class'
+               self.scope.parent.get_kind() == 'Class'
 
     @property
     def indents(self):
@@ -181,7 +182,6 @@ class _ExtractInfo(object):
         return self.source[self.region[0]:self.region[1]]
 
     _returned = None
-
     @property
     def returned(self):
         """Does the extracted piece contain return statement"""
@@ -273,8 +273,7 @@ class _ExtractPerformer(object):
                 if self.info.variable:
                     return [self.info.scope_region]
                 else:
-                    return [self.info._get_scope_region(
-                        self.info.scope.parent)]
+                    return [self.info._get_scope_region(self.info.scope.parent)]
         else:
             return [self.info.region]
 
@@ -392,9 +391,8 @@ class _ExceptionalConditionChecker(object):
                                    'contain complete statements.')
 
     def _is_region_on_a_word(self, info):
-        if info.region[0] > 0 and \
-                self._is_on_a_word(info, info.region[0] - 1) or \
-                self._is_on_a_word(info, info.region[1] - 1):
+        if info.region[0] > 0 and self._is_on_a_word(info, info.region[0] - 1) or \
+           self._is_on_a_word(info, info.region[1] - 1):
             return True
 
     def _is_on_a_word(self, info, offset):
@@ -438,7 +436,7 @@ class _ExtractMethodParts(object):
         return result
 
     def _find_temps(self):
-        return usefunction.find_temps(self.info.project,
+        return usefunction.find_temps(self.info.pycore.project,
                                       self._get_body())
 
     def get_checks(self):
@@ -470,7 +468,7 @@ class _ExtractMethodParts(object):
             result.append('@staticmethod\n')
         result.append('def %s:\n' % self._get_function_signature(args))
         unindented_body = self._get_unindented_function_body(returns)
-        indents = sourceutils.get_indent(self.info.project)
+        indents = sourceutils.get_indent(self.info.pycore)
         function_body = sourceutils.indent_lines(unindented_body, indents)
         result.append(function_body)
         definition = ''.join(result)
@@ -489,11 +487,11 @@ class _ExtractMethodParts(object):
                 args.remove(self_name)
             args.insert(0, self_name)
         return prefix + self.info.new_name + \
-            '(%s)' % self._get_comma_form(args)
+               '(%s)' % self._get_comma_form(args)
 
     def _extracting_method(self):
         return self.info.method and not self.info.make_global and \
-            _get_function_kind(self.info.scope) == 'method'
+               _get_function_kind(self.info.scope) == 'method'
 
     def _get_self_name(self):
         param_names = self.info.scope.pyobject.get_param_names()
@@ -505,7 +503,7 @@ class _ExtractMethodParts(object):
         if self.info.method and not self.info.make_global:
             if _get_function_kind(self.info.scope) == 'method':
                 self_name = self._get_self_name()
-                if self_name in args:
+                if  self_name in args:
                     args.remove(self_name)
                 prefix = self_name + '.'
             else:
@@ -559,7 +557,7 @@ class _ExtractMethodParts(object):
         if self.info.one_line or self.info.returned:
             return []
         written = self.info_collector.written | \
-            self.info_collector.maybe_written
+                  self.info_collector.maybe_written
         return list(written & self.info_collector.postread)
 
     def _get_unindented_function_body(self, returns):
@@ -579,7 +577,7 @@ class _ExtractVariableParts(object):
 
     def get_definition(self):
         result = self.info.new_name + ' = ' + \
-            _join_lines(self.info.extracted) + '\n'
+                 _join_lines(self.info.extracted) + '\n'
         return result
 
     def get_body_pattern(self):
@@ -671,6 +669,7 @@ class _FunctionInformationCollector(object):
 
     def _For(self, node):
         self._handle_conditional_node(node)
+
 
 
 def _get_argnames(arguments):
@@ -771,7 +770,6 @@ class _UnmatchedBreakOrContinueFinder(object):
         ast.walk(node, visitor)
         return visitor.error
 
-
 def _get_function_kind(scope):
     return scope.pyobject.get_kind()
 
@@ -780,7 +778,6 @@ def _parse_text(body):
     body = sourceutils.fix_indentation(body, 0)
     node = ast.parse(body)
     return node
-
 
 def _join_lines(code):
     lines = []

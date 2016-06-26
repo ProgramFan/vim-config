@@ -199,13 +199,11 @@ def unicode_to_file_data(contents, encoding=None):
     except UnicodeEncodeError:
         return contents.encode('utf-8')
 
-
 def file_data_to_unicode(data, encoding=None):
     result = _decode_data(data, encoding)
     if '\r' in result:
         result = result.replace('\r\n', '\n').replace('\r', '\n')
     return result
-
 
 def _decode_data(data, encoding):
     if isinstance(data, unicode):
@@ -229,6 +227,7 @@ def read_file_coding(path):
     file = open(path, 'b')
     count = 0
     result = []
+    buffsize = 10
     while True:
         current = file.read(10)
         if not current:

@@ -1,6 +1,5 @@
 import rope.base.exceptions
 import rope.base.pyobjects
-from rope.base import libutils
 from rope.base import taskhandle, evaluate
 from rope.base.change import (ChangeSet, ChangeContents)
 from rope.refactor import rename, occurrences, sourceutils, importutils
@@ -9,14 +8,13 @@ from rope.refactor import rename, occurrences, sourceutils, importutils
 class IntroduceFactory(object):
 
     def __init__(self, project, resource, offset):
-        self.project = project
+        self.pycore = project.pycore
         self.offset = offset
 
-        this_pymodule = self.project.get_pymodule(resource)
+        this_pymodule = self.pycore.resource_to_pyobject(resource)
         self.old_pyname = evaluate.eval_location(this_pymodule, offset)
-        if self.old_pyname is None or \
-                not isinstance(self.old_pyname.get_object(),
-                               rope.base.pyobjects.PyClass):
+        if self.old_pyname is None or not isinstance(self.old_pyname.get_object(),
+                                                     rope.base.pyobjects.PyClass):
             raise rope.base.exceptions.RefactoringError(
                 'Introduce factory should be performed on a class.')
         self.old_name = self.old_pyname.get_object().get_name()
@@ -37,7 +35,7 @@ class IntroduceFactory(object):
 
         """
         if resources is None:
-            resources = self.project.get_python_files()
+            resources = self.pycore.get_python_files()
         changes = ChangeSet('Introduce factory method <%s>' % factory_name)
         job_set = task_handle.create_jobset('Collecting Changes',
                                             len(resources))
@@ -66,11 +64,11 @@ class IntroduceFactory(object):
                                                     global_)
             if changed_code is not None:
                 if global_:
-                    new_pymodule = libutils.get_string_module(
-                        self.project, changed_code, self.resource)
-                    modname = libutils.modname(self.resource)
+                    new_pymodule = self.pycore.get_string_module(changed_code,
+                                                                 self.resource)
+                    modname = self.pycore.modname(self.resource)
                     changed_code, imported = importutils.add_import(
-                        self.project, new_pymodule, modname, factory_name)
+                        self.pycore, new_pymodule, modname, factory_name)
                     changed_code = changed_code.replace(replacement, imported)
                 changes.add_change(ChangeContents(file_, changed_code))
             job_set.finished_job()
@@ -83,8 +81,8 @@ class IntroduceFactory(object):
         if source_code is None:
             source_code = self.pymodule.source_code
         else:
-            self.pymodule = libutils.get_string_module(
-                self.project, source_code, resource=self.resource)
+            self.pymodule = self.pycore.get_string_module(
+                source_code, resource=self.resource)
         lines = self.pymodule.lines
         start = self._get_insertion_offset(class_scope, lines)
         result = source_code[:start]
@@ -102,7 +100,7 @@ class IntroduceFactory(object):
 
     def _get_factory_method(self, lines, class_scope,
                             factory_name, global_):
-        unit_indents = ' ' * sourceutils.get_indent(self.project)
+        unit_indents = ' ' * sourceutils.get_indent(self.pycore)
         if global_:
             if self._get_scope_indents(lines, class_scope) > 0:
                 raise rope.base.exceptions.RefactoringError(
@@ -113,7 +111,7 @@ class IntroduceFactory(object):
             ('@staticmethod\ndef %s(*args, **kwds):\n' % factory_name +
              '%sreturn %s(*args, **kwds)\n' % (unit_indents, self.old_name))
         indents = self._get_scope_indents(lines, class_scope) + \
-            sourceutils.get_indent(self.project)
+                  sourceutils.get_indent(self.pycore)
         return '\n' + sourceutils.indent_lines(unindented_factory, indents)
 
     def _get_scope_indents(self, lines, scope):
@@ -126,7 +124,7 @@ class IntroduceFactory(object):
             return self.old_name + '.' + factory_name
 
     def _rename_occurrences(self, file_, changed_name, global_factory):
-        finder = occurrences.create_finder(self.project, self.old_name,
+        finder = occurrences.create_finder(self.pycore, self.old_name,
                                            self.old_pyname, only_calls=True)
         result = rename.rename_in_module(finder, changed_name, resource=file_,
                                          replace_primary=global_factory)

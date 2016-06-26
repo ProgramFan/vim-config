@@ -1,39 +1,30 @@
-"""Load extensions."""
+""" Load extensions. """
 
-LINTERS = {}
+from os import listdir, path as op
 
-try:
-    from pylama.lint.pylama_mccabe import Linter
-    LINTERS['mccabe'] = Linter()
-except ImportError:
-    pass
 
-try:
-    from pylama.lint.pylama_pep257 import Linter
-    LINTERS['pep257'] = Linter()
-except ImportError:
-    pass
+CURDIR = op.dirname(__file__)
+LINTERS = dict()
+PREFIX = 'pylama_'
 
 try:
-    from pylama.lint.pylama_pep8 import Linter
-    LINTERS['pep8'] = Linter()
+    from importlib import import_module
 except ImportError:
-    pass
+    from ..libs.importlib import import_module
 
-try:
-    from pylama.lint.pylama_pyflakes import Linter
-    LINTERS['pyflakes'] = Linter()
-except ImportError:
-    pass
-
-
-from pkg_resources import iter_entry_points
-
-for entry in iter_entry_points('pylama.linter'):
-    if entry.name not in LINTERS:
+for p in listdir(CURDIR):
+    if p.startswith(PREFIX) and op.isdir(op.join(CURDIR, p)):
+        name = p[len(PREFIX):]
         try:
-            LINTERS[entry.name] = entry.load()()
+            module = import_module('.lint.%s%s' % (PREFIX, name), 'pylama')
+            LINTERS[name] = getattr(module, 'Linter')()
         except ImportError:
-            pass
+            continue
 
-#  pylama:ignore=E0611
+try:
+    from pkg_resources import iter_entry_points
+
+    for entry in iter_entry_points('pylama.linter'):
+        LINTERS[entry.name] = entry.load()()
+except ImportError:
+    pass

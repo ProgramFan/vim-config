@@ -12,6 +12,13 @@ endfunction "}}}
 " DESC: Import python libs
 fun! pymode#init(plugin_root, paths) "{{{
 
+    if g:pymode_python == 'disable'
+        if g:pymode_warning
+            call pymode#error("Pymode requires vim compiled with +python. Most of features will be disabled.")
+        endif
+        return
+    endif
+
     PymodePython import sys, vim
     PymodePython sys.path.insert(0, vim.eval('a:plugin_root'))
     PymodePython sys.path = vim.eval('a:paths') + sys.path
@@ -54,7 +61,7 @@ fun! pymode#quickfix_open(onlyRecognized, maxHeight, minHeight, jumpError) "{{{
     redraw
     if numOthers > 0
         call pymode#wide_message(printf('Quickfix: %d(+%d)', numErrors, numOthers))
-    elseif numErrors > 0
+    else
         call pymode#wide_message(printf('Quickfix: %d', numErrors))
     endif
 endfunction "}}}
@@ -69,11 +76,9 @@ endfunction "}}}
 
 " DESC: Remove unused whitespaces
 fun! pymode#trim_whitespaces() "{{{
-    if g:pymode_trim_whitespaces
-        let cursor_pos = getpos('.')
-        silent! %s/\s\+$//
-        call setpos('.', cursor_pos)
-    endif
+    let cursor_pos = getpos('.')
+    silent! %s/\s\+$//
+    call setpos('.', cursor_pos)
 endfunction "}}}
 
 
@@ -102,11 +107,11 @@ endfunction "}}}
 
 fun! pymode#buffer_pre_write() "{{{
     let b:pymode_modified = &modified
-endfunction "}}}
+endfunction
 
 fun! pymode#buffer_post_write() "{{{
     if g:pymode_rope
-        if g:pymode_rope_regenerate_on_write && b:pymode_modified
+        if b:pymode_modified && g:pymode_rope_regenerate_on_write
             call pymode#debug('regenerate')
             call pymode#rope#regenerate()
         endif
@@ -128,6 +133,6 @@ endfunction "}}}
 
 fun! pymode#quit() "{{{
     augroup pymode
-        au! * <buffer>
+        au!
     augroup END
 endfunction "}}}

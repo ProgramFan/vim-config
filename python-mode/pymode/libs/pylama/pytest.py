@@ -3,7 +3,7 @@ from __future__ import absolute_import
 
 from os import path as op
 
-import py # noqa
+import py
 import pytest
 
 
@@ -59,12 +59,11 @@ class PylamaItem(pytest.Item, pytest.File):
             pytest.skip("file(s) previously passed Pylama checks")
 
     def runtest(self):
-        errors = check_file(self.fspath)
+        call = py.io.StdCapture.call
+        errors, out, err = call(check_file, self.fspath)
+        # errors = check_file(self.fspath)
         if errors:
-            pattern = "%(filename)s:%(lnum)s:%(col)s: %(text)s"
-            out = "\n".join([pattern % e._info for e in errors])
-            raise PylamaError(out)
-
+            raise PylamaError(out, err)
         # update mtime only if test passed
         # otherwise failures would not be re-run next time
         if self.cache:
@@ -77,11 +76,11 @@ class PylamaItem(pytest.Item, pytest.File):
 
 
 def check_file(path):
-    from pylama.main import parse_options, process_paths
+    from pylama.main import parse_options, check_files
     from pylama.config import CURDIR
 
     options = parse_options()
     path = op.relpath(str(path), CURDIR)
-    return process_paths(options, candidates=[path], error=False)
+    return check_files([path], options, error=False)
 
-# pylama:ignore=D,E1002,W0212,F0001
+# pylama:ignore=D,E1002,W0212

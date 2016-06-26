@@ -65,7 +65,9 @@ fun! pymode#lint#check() "{{{
 
     call g:PymodeSigns.refresh(loclist)
 
-    call loclist.show()
+    if g:pymode_lint_cwindow
+        call loclist.show()
+    endif
 
     call pymode#lint#show_errormessage()
     call pymode#wide_message('Found errors and warnings: ' . len(loclist._loclist))

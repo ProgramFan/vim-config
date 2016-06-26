@@ -1,7 +1,6 @@
 import warnings
 
 from rope.base import change, taskhandle, builtins, ast, codeanalyze
-from rope.base import libutils
 from rope.refactor import patchedast, similarfinder, sourceutils
 from rope.refactor.importutils import module_imports
 
@@ -53,6 +52,7 @@ class Restructure(object):
        from rope.contrib import generate
 
       args
+       pycore: type=rope.base.pycore.PyCore
        project: type=rope.base.project.Project
 
     Example #4::
@@ -79,7 +79,7 @@ class Restructure(object):
         See class pydoc for more info about the arguments.
 
         """
-        self.project = project
+        self.pycore = project.pycore
         self.pattern = pattern
         self.goal = goal
         self.args = args
@@ -132,13 +132,13 @@ class Restructure(object):
                                    (self.pattern, self.goal))
         if resources is not None:
             files = [resource for resource in resources
-                     if libutils.is_python_file(self.project, resource)]
+                     if self.pycore.is_python_file(resource)]
         else:
-            files = self.project.get_python_files()
+            files = self.pycore.get_python_files()
         job_set = task_handle.create_jobset('Collecting Changes', len(files))
         for resource in files:
             job_set.started_job(resource.path)
-            pymodule = self.project.get_pymodule(resource)
+            pymodule = self.pycore.resource_to_pyobject(resource)
             finder = similarfinder.SimilarFinder(pymodule,
                                                  wildcards=self.wildcards)
             matches = list(finder.get_matches(self.pattern, self.args))
@@ -161,16 +161,16 @@ class Restructure(object):
         if not imports:
             return source
         import_infos = self._get_import_infos(resource, imports)
-        pymodule = libutils.get_string_module(self.project, source, resource)
-        imports = module_imports.ModuleImports(self.project, pymodule)
+        pymodule = self.pycore.get_string_module(source, resource)
+        imports = module_imports.ModuleImports(self.pycore, pymodule)
         for import_info in import_infos:
             imports.add_import(import_info)
         return imports.get_changed_source()
 
     def _get_import_infos(self, resource, imports):
-        pymodule = libutils.get_string_module(
-            self.project, '\n'.join(imports), resource)
-        imports = module_imports.ModuleImports(self.project, pymodule)
+        pymodule = self.pycore.get_string_module('\n'.join(imports),
+                                                 resource)
+        imports = module_imports.ModuleImports(self.pycore, pymodule)
         return [imports.import_info
                 for imports in imports.imports]
 
@@ -183,7 +183,7 @@ class Restructure(object):
         checks = {}
         for key, value in string_checks.items():
             is_pyname = not key.endswith('.object') and \
-                not key.endswith('.type')
+                        not key.endswith('.type')
             evaluated = self._evaluate(value, is_pyname=is_pyname)
             if evaluated is not None:
                 checks[key] = evaluated
@@ -198,7 +198,7 @@ class Restructure(object):
                     return builtins.builtins[name]
             pyobject = _BuiltinsStub()
         else:
-            pyobject = self.project.get_module(attributes[0])
+            pyobject = self.pycore.get_module(attributes[0])
         for attribute in attributes[1:]:
             pyname = pyobject[attribute]
             if pyname is None:

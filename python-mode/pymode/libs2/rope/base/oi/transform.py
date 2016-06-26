@@ -120,6 +120,7 @@ class TextualToPyObject(object):
             return None
 
     def builtin_to_pyobject(self, textual):
+        name = textual[1]
         method = getattr(self, 'builtin_%s_to_pyobject' % textual[1], None)
         if method is not None:
             return method(textual)
@@ -202,7 +203,7 @@ class TextualToPyObject(object):
     def _get_pymodule(self, path):
         resource = self.path_to_resource(path)
         if resource is not None:
-            return self.project.get_pymodule(resource)
+            return self.project.pycore.resource_to_pyobject(resource)
 
     def path_to_resource(self, path):
         try:
@@ -220,7 +221,7 @@ class TextualToPyObject(object):
 
 class DOITextualToPyObject(TextualToPyObject):
     """For transforming textual form to `PyObject`
-
+    
     The textual form DOI uses is different from rope's standard
     textual form.  The reason is that we cannot find the needed
     information by analyzing live objects.  This class can be
@@ -252,8 +253,7 @@ class DOITextualToPyObject(TextualToPyObject):
            isinstance(suspected, rope.base.pyobjects.PyClass):
             return suspected
         else:
-            lineno = self._find_occurrence(name,
-                                           pymodule.get_resource().read())
+            lineno = self._find_occurrence(name, pymodule.get_resource().read())
             if lineno is not None:
                 inner_scope = module_scope.get_inner_scope_for_line(lineno)
                 return inner_scope.pyobject
@@ -278,8 +278,8 @@ class DOITextualToPyObject(TextualToPyObject):
 
     def path_to_resource(self, path):
         import rope.base.libutils
-        relpath = rope.base.libutils.path_relative_to_project_root(
-            self.project, path)
+        root = self.project.address
+        relpath = rope.base.libutils.relative(root, path)
         if relpath is not None:
             path = relpath
         return super(DOITextualToPyObject, self).path_to_resource(path)

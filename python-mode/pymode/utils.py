@@ -32,9 +32,10 @@ def silence_stderr():
 
 
 def patch_paths():
-    """Patch python sys.path.
-
-    Load required modules from the plugin's sources.
-    """
+    """ Function description. """
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs'))
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs2' if PY2 else 'libs3'))
+
+    if PY2:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs2'))
+    else:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs3'))
