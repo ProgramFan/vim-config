@@ -58,10 +58,7 @@ Plug 'klen/python-mode', { 'for': 'python' }
 Plug 'leshill/vim-json', { 'for': 'json' }
 Plug 'SirVer/ultisnips'
 
-" CodeFormat: code formatter/beautifier
-Plug 'google/vim-maktaba'
-Plug 'google/vim-glaive'
-Plug 'google/vim-codefmt'
+Plug 'Chiel92/vim-codeformat'
 
 Plug 'GCBallesteros/vim-autocite'
 Plug 'tomtom/tcomment_vim'
