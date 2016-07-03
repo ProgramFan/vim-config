@@ -65,4 +65,7 @@ Plug 'tomtom/tcomment_vim'
 Plug 'junegunn/vim-easy-align'
 Plug 'kchmck/vim-coffee-script'
 
+Plug 'KabbAmine/zeavim.vim'
+Plug 'rizzatti/dash.vim'
+
 call plug#end()
