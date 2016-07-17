@@ -36,6 +36,7 @@ import nose
 import functools
 import os
 import tempfile
+import time
 import stat
 
 from ycmd import handlers, user_options_store
@@ -55,6 +56,7 @@ WindowsOnly = skipIf( not OnWindows(), 'Windows only' )
 ClangOnly = skipIf( not ycm_core.HasClangSupport(),
                     'Only when Clang support available' )
 MacOnly = skipIf( not OnMac(), 'Mac only' )
+UnixOnly = skipIf( OnWindows(), 'Unix only' )
 
 
 def BuildRequest( **kwargs ):
@@ -139,6 +141,13 @@ def ChunkMatcher( replacement_text, start, end ):
   } )
 
 
+def LineColMatcher( line, col ):
+  return has_entries( {
+    'line_num': line,
+    'column_num': col
+  } )
+
+
 @contextlib.contextmanager
 def PatchCompleter( completer, filetype ):
   user_options = handlers._server_state._user_options
@@ -182,6 +191,37 @@ def SetUpApp():
   bottle.debug( True )
   handlers.SetServerStateToDefaults()
   return TestApp( handlers.app )
+
+
+def StartCompleterServer( app, filetype, filepath = '/foo' ):
+  app.post_json( '/run_completer_command',
+                 BuildRequest( command_arguments = [ 'RestartServer' ],
+                               filetype = filetype,
+                               filepath = filepath ) )
+
+
+def StopCompleterServer( app, filetype, filepath = '/foo' ):
+  app.post_json( '/run_completer_command',
+                 BuildRequest( command_arguments = [ 'StopServer' ],
+                               filetype = filetype,
+                               filepath = filepath ),
+                 expect_errors = True )
+
+
+def WaitUntilCompleterServerReady( app, filetype ):
+  retries = 100
+
+  while retries > 0:
+    result = app.get( '/ready', { 'subserver': filetype } ).json
+    if result:
+      return
+
+    time.sleep( 0.2 )
+    retries = retries - 1
+
+  raise RuntimeError(
+    'Timeout waiting for "{0}" filetype completer'.format( filetype ) )
+
 
 
 def ClearCompletionsCache():
