@@ -28,9 +28,9 @@ function! airline#themes#onedark#refresh()
   let g:airline#themes#onedark#palette.insert = airline#themes#generate_color_map(s:I1, s:I2, s:I3)
   let g:airline#themes#onedark#palette.insert_modified = g:airline#themes#onedark#palette.normal_modified
 
-  let s:R1 = airline#themes#get_highlight('Error')
+  let s:R1 = airline#themes#get_highlight2(['Normal', 'bg'], ['Error', 'fg'])
   let s:R2 = s:N2
-  let s:R3 = airline#themes#get_highlight2(['Error', 'fg'], ['Normal', 'bg'])
+  let s:R3 = airline#themes#get_highlight('Error')
   let g:airline#themes#onedark#palette.replace = airline#themes#generate_color_map(s:R1, s:R2, s:R3)
   let g:airline#themes#onedark#palette.replace_modified = g:airline#themes#onedark#palette.normal_modified
 

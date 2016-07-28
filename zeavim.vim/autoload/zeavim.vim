@@ -1,5 +1,5 @@
 " CREATION     : 2015-12-21
-" MODIFICATION : 2016-05-18
+" MODIFICATION : 2016-07-19
 
 " VARIABLES
 " =====================================================================
@@ -17,20 +17,19 @@ if !exists('g:zv_docsets_dir')
 endif
 " A dictionary containing the docset names of some file extensions {{{1
 let s:docsetsDic = {
-			\ 'cpp'                   : 'c++',
-			\ '^(G|g)runtfile\.'      : 'grunt',
-			\ '^(G|g)ulpfile\.'       : 'gulp',
-			\ '.htaccess'             : 'apache_http_server',
-			\ '^(md|mdown|mkd|mkdn)$' : 'markdown',
-			\ 'scss'                  : 'sass',
-			\ 'sh'                    : 'bash',
-			\ 'tex'                   : 'latex',
-		\ }
+			\	'cpp' : 'c++',
+			\	'scss': 'sass',
+			\	'sh'  : 'bash',
+			\	'tex' : 'latex',
+			\ }
 " Add external docset names from a global variable {{{1
 if exists('g:zv_file_types')
 	" Tr spaces to _ to allow multiple docsets
 	call extend(s:docsetsDic, map(g:zv_file_types, 'tr(v:val, " ", "_")'))
 endif
+" Order or criteria for getting the docset {{{1
+let g:zv_get_docset_by = exists('g:zv_get_docset_by') ?
+			\ g:zv_get_docset_by : ['file', 'ext', 'ft']
 " }}}
 
 " FUNCTIONS
@@ -66,36 +65,29 @@ function! s:GetDocsetsList() abort " {{{1
 	return filter(copy(s:docsetList), 'index(s:docsetList, v:val, v:key+1)==-1')
 endfunction
 function! s:GetDocset(file, ext, ft) abort " {{{1
-	" Try to guess docset from:
-	" 1. file name
-	" 2. file extension
-	" 3. file type
+	" Try to guess docset from what defined in g:zv_get_docset_by
+	" By default:
+	"	1. file name
+	" 	2. file extension
+	" 	3. file type
 
-	for l:k in keys(s:docsetsDic)
-		" If the key starts with \v then we consider it as
-		" a regex, so we add magic!
-		let l:pattern = l:k =~# '\v^\^' ?
-					\ '\v' . l:k : l:k
-		if match(a:file, l:pattern) ==# 0
-			let l:docset = s:docsetsDic[l:k]
-			break
-		elseif match(a:ext, l:pattern) ==# 0
-			let l:docset = s:docsetsDic[l:k]
-			break
-		elseif match(a:ft, l:pattern) ==# 0
-			let l:docset = s:docsetsDic[l:k]
-			break
-		else
-			let l:docset = ''
-		endif
+	let l:docset = ''
+	for l:t in g:zv_get_docset_by
+		for l:k in keys(s:docsetsDic)
+			if match(a:{l:t}, l:k) ==# 0
+				let l:docset = s:docsetsDic[l:k]
+				break
+			endif
+			if !empty(l:docset)
+				break
+			endif
+		endfor
 	endfor
+
 	if empty(l:docset) && !empty(a:ft)
 		let l:docset = a:ft
 	endif
-	" If still empty, then...
-	if empty(l:docset)
-		call s:Echo(3, 'The file type is not recognized')
-	endif
+
 	return l:docset
 endfunction
 function! s:GetDocsetsFromDir() abort " {{{1
@@ -107,17 +99,9 @@ endfunction
 function! s:SetDocset() abort " {{{1
 	" Return the appropriate docset name.
 
-	let l:file = expand('%:p:t')
-	let l:ext = expand('%:e')
-	let l:ft = &filetype
-	if !empty(getbufvar('%', 'manualDocset'))
-		let l:docset = getbufvar('%', 'manualDocset')
-	elseif !empty(l:file) || !empty(l:ft) || !empty(l:ext)
-		let l:docset = s:GetDocset(l:file, l:ext, l:ft)
-	else
-		call s:Echo(3, 'No file type found')
-		let l:docset = ''
-	endif
+	let l:docset = !empty(getbufvar('%', 'manualDocset')) ?
+				\	getbufvar('%', 'manualDocset') :
+				\	s:GetDocset(expand('%:p:t'), expand('%:e'), &ft)
 	return tolower(l:docset)
 endfunction
 function! s:GetVisualSelection() abort " {{{1
@@ -132,32 +116,28 @@ function! s:FromInput() abort " {{{1
 	"	* Query
 	"	* Docset name (Use s:SetDocset() by default)
 
-	redir => l:m
-	silent call s:SetDocset()
-	redir END
-	" If no docset found, a message is stored into l:m
-	let l:d = input('Docset: ',
-				\ (!empty(l:m) ? '' : s:SetDocset()),
+	let l:docset = input('Docset: ',
+				\ s:SetDocset(),
 				\ 'custom,zeavim#CompleteDocsets'
 				\ )
 	redraw!
-	call s:Echo(2, 'Zeal (' . l:d . ')')
+	call s:Echo(2, 'Zeal (' . l:docset . ')')
 	let l:input = input('Search for: ')
 
-	return [l:input, l:d]
+	return [l:input, l:docset]
 endfunction
 function! s:Zeal(docset, query) abort " {{{1
 	" Execute Zeal with the docset and query passed in the arguments.
 
 	let l:docset = !empty(a:docset) ? tr(a:docset, '_', ' ') . ':' : ''
-	let l:query = !empty(a:query) ? a:query : ''
+	let l:query = !empty(a:query) ? escape(a:query, '#%') : ''
 	let l:focus = has('unix') && executable('wmctrl') && v:windowid !=# 0 ?
 				\ '&& wmctrl -ia ' . v:windowid . ' ' :
 				\ ''
 	let l:cmd = printf('!%s%s %s %s%s &',
 				\ (has('unix') ? '' : 'start '),
 				\ g:zv_zeal_executable,
-				\ shellescape(l:docset . fnameescape(l:query)),
+				\ shellescape(l:docset . l:query),
 				\ l:focus,
 				\ (has('unix') ? '2> /dev/null' : '')
 			\ )
@@ -167,23 +147,33 @@ endfunction
 " }}}
 
 function! zeavim#SearchFor(...) abort " {{{1
-	" Execute Zeal with:
-	"	a:1 as a query (Or visual selection if a:2 exists)
-	"	call s:FromInput() if no argument(s) were passed
+	" args: (bang, query, [line1, line2])
+	" If bang
+	"	Execute s:FromInput()
+	" If no bang, execute Zeal with:
+	"	query
+	"	or visual selection if [line1, line2] is different from [1,
+	"	last line]
 
-	if s:CheckExecutable()
-		if exists('a:1')
-			let l:s = exists('a:2') ? s:GetVisualSelection() : a:1
-			let l:d = s:SetDocset()
-			if !empty(l:s) && !empty(l:d)
-				call s:Zeal(l:d, l:s)
-			endif
-		else
-			let [l:s, l:d] = s:FromInput()
-			if !empty(l:s)
-				" Allow here empty docset
-				call s:Zeal(l:d, l:s)
-			endif
+	if !s:CheckExecutable()
+		return 0
+	endif
+
+	let l:bang = exists('a:1') ? a:1 : ''
+	let l:query = exists('a:2') ? a:2 : ''
+	let l:visual = exists('a:3') && a:3 !=# [1, line('$')]
+
+	if l:bang ==# '!'
+		let [l:s, l:d] = s:FromInput()
+		" Allow empty docset here
+		if !empty(l:s)
+			call s:Zeal(l:d, l:s)
+		endif
+	else
+		let l:s = l:visual ? s:GetVisualSelection() : l:query
+		let l:d = s:SetDocset()
+		if !empty(l:s) && !empty(l:d)
+			call s:Zeal(l:d, l:s)
 		endif
 	endif
 endfunction
@@ -191,7 +181,7 @@ function! zeavim#CompleteDocsets(A, L, P) abort " {{{1
 	return join(sort(s:GetDocsetsList()), "\n") . "\n"
 endfunction
 function! zeavim#OperatorFun(...) abort " {{{1
-	call zeavim#SearchFor(getline('.')[col("'[") - 1 : col("']") - 1])
+	call zeavim#SearchFor('', getline('.')[col("'[") - 1 : col("']") - 1])
 endfunction
 function! zeavim#DocsetInBuffer(...) abort " {{{1
 	if exists('a:000')

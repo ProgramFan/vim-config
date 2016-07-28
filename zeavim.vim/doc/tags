@@ -16,5 +16,6 @@ zeavim-settings:docset-completion	zeavim.txt	/*zeavim-settings:docset-completion
 zeavim-settings:location	zeavim.txt	/*zeavim-settings:location*
 zeavim-settings:new-types	zeavim.txt	/*zeavim-settings:new-types*
 zeavim-settings:no-mapping	zeavim.txt	/*zeavim-settings:no-mapping*
+zeavim-settings:order	zeavim.txt	/*zeavim-settings:order*
 zeavim-usage	zeavim.txt	/*zeavim-usage*
 zeavim.txt	zeavim.txt	/*zeavim.txt*
