@@ -271,16 +271,22 @@ Note that you need not rely on Vim’s autoformat exclusively and can
 manually reformat paragraphs with standard Vim commands:
 
 * `gqip` or `gwip` - format current paragraph
-* `vipJ` - unformat (i.e., join all lines with hard line breaks) in current paragraph
+* `vapJgwip` - merge two paragraphs (current and next) and format
 * `ggVGgq` or `:g/^/norm gqq` - format all paragraphs in buffer
-* `:%norm vipJ` - unformat all paragraphs in buffer
 
 Optionally, you can map these operations to underutilized keys in your
 `.vimrc`:
 
 ```vim
 nnoremap <silent> Q gwip
+nnoremap <silent> <leader>Q vapJgwip
 ```
+
+Or you may wish to ‘unformat’, (i.e., remove hard line breaks) when using
+soft line wrap.
+
+* `vipJ` - join all lines in current paragraph
+* `:%norm vipJ` - unformat all paragraphs in buffer
 
 ## Default textwidth
 
@@ -558,11 +564,13 @@ Bloggers and developers discuss _pencil_ and its brethern:
 
 Other plugins of specific interest to writers:
 
+* [danielbmarques/vim-ditto][vd] - highlight repeated words
 * [tpope/vim-abolish][ab] - search for, substitute, and abbr. multiple variants of a word
 * [tommcdo/vim-exchange][ex] - easy text exchange operator for Vim
 * [junegunn/limelight.vim][jl] - focus mode that brightens current paragraph
 * [junegunn/goyo.vim][jg] - distraction-free editing mode
 
+[vd]: https://github.com/danielbmarques/vim-ditto
 [qtfwp]: http://benoliver999.com/technology/2014/12/06/vimforprose/
 [wwv]: https://lilii.co/aardvark/writing-with-vim
 [vic]: https://labs.tomasino.org/vim-in-context.html
