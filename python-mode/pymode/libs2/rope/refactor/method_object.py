@@ -1,6 +1,5 @@
 import warnings
 
-from rope.base import libutils
 from rope.base import pyobjects, exceptions, change, evaluate, codeanalyze
 from rope.refactor import sourceutils, occurrences, rename
 
@@ -8,8 +7,8 @@ from rope.refactor import sourceutils, occurrences, rename
 class MethodObject(object):
 
     def __init__(self, project, resource, offset):
-        self.project = project
-        this_pymodule = self.project.get_pymodule(resource)
+        self.pycore = project.pycore
+        this_pymodule = self.pycore.resource_to_pyobject(resource)
         pyname = evaluate.eval_location(this_pymodule, offset)
         if pyname is None or not isinstance(pyname.get_object(),
                                             pyobjects.PyFunction):
@@ -22,10 +21,10 @@ class MethodObject(object):
 
     def get_new_class(self, name):
         body = sourceutils.fix_indentation(
-            self._get_body(), sourceutils.get_indent(self.project) * 2)
+            self._get_body(), sourceutils.get_indent(self.pycore) * 2)
         return 'class %s(object):\n\n%s%sdef __call__(self):\n%s' % \
                (name, self._get_init(),
-                ' ' * sourceutils.get_indent(self.project), body)
+                ' ' * sourceutils.get_indent(self.pycore), body)
 
     def get_changes(self, classname=None, new_class_name=None):
         if new_class_name is not None:
@@ -37,15 +36,14 @@ class MethodObject(object):
         start, end = sourceutils.get_body_region(self.pyfunction)
         indents = sourceutils.get_indents(
             self.pymodule.lines, self.pyfunction.get_scope().get_start()) + \
-            sourceutils.get_indent(self.project)
+            sourceutils.get_indent(self.pycore)
         new_contents = ' ' * indents + 'return %s(%s)()\n' % \
                        (classname, ', '.join(self._get_parameter_names()))
         collector.add_change(start, end, new_contents)
         insertion = self._get_class_insertion_point()
         collector.add_change(insertion, insertion,
                              '\n\n' + self.get_new_class(classname))
-        changes = change.ChangeSet(
-            'Replace method with method object refactoring')
+        changes = change.ChangeSet('Replace method with method object refactoring')
         changes.add_change(change.ChangeContents(self.resource,
                                                  collector.get_changed()))
         return changes
@@ -61,10 +59,9 @@ class MethodObject(object):
         body = sourceutils.get_body(self.pyfunction)
         for param in self._get_parameter_names():
             body = param + ' = None\n' + body
-            pymod = libutils.get_string_module(
-                self.project, body, self.resource)
+            pymod = self.pycore.get_string_module(body, self.resource)
             pyname = pymod[param]
-            finder = occurrences.create_finder(self.project, param, pyname)
+            finder = occurrences.create_finder(self.pycore, param, pyname)
             result = rename.rename_in_module(finder, 'self.' + param,
                                              pymodule=pymod)
             body = result[result.index('\n') + 1:]
@@ -72,7 +69,7 @@ class MethodObject(object):
 
     def _get_init(self):
         params = self._get_parameter_names()
-        indents = ' ' * sourceutils.get_indent(self.project)
+        indents = ' ' * sourceutils.get_indent(self.pycore)
         if not params:
             return ''
         header = indents + 'def __init__(self'
