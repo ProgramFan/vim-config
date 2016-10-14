@@ -65,6 +65,8 @@ let s:short_help      = 1
 let s:nearby_disabled = 0
 let s:paused = 0
 let s:pwin_by_tagbar = 0
+let s:buffer_seqno = 0
+let s:vim_quitting = 0
 
 let s:window_expanded   = 0
 let s:expand_bufnr = -1
@@ -943,7 +945,7 @@ function! s:RestoreSession() abort
 
     let curfile = fnamemodify(bufname('%'), ':p')
 
-    let tagbarwinnr = bufwinnr('__Tagbar__')
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
     if tagbarwinnr == -1
         " Tagbar wasn't open in the saved session, nothing to do
         return
@@ -999,11 +1001,12 @@ function! s:MapKeys() abort
         \ ['nextfold',      'GotoNextFold()'],
         \ ['prevfold',      'GotoPrevFold()'],
         \
-        \ ['togglesort',      'ToggleSort()'],
-        \ ['toggleautoclose', 'ToggleAutoclose()'],
-        \ ['zoomwin',         'ZoomWindow()'],
-        \ ['close',           'CloseWindow()'],
-        \ ['help',            'ToggleHelp()'],
+        \ ['togglesort',            'ToggleSort()'],
+        \ ['togglecaseinsensitive', 'ToggleCaseInsensitive()'],
+        \ ['toggleautoclose',       'ToggleAutoclose()'],
+        \ ['zoomwin',               'ZoomWindow()'],
+        \ ['close',                 'CloseWindow()'],
+        \ ['help',                  'ToggleHelp()'],
     \ ]
 
     for [map, func] in maps
@@ -1029,18 +1032,23 @@ function! s:CreateAutocommands() abort
 
     augroup TagbarAutoCmds
         autocmd!
-        autocmd CursorHold __Tagbar__ call s:ShowPrototype(1)
-        autocmd WinEnter   __Tagbar__ call s:SetStatusLine('current')
-        autocmd WinLeave   __Tagbar__ call s:SetStatusLine('noncurrent')
+        autocmd CursorHold __Tagbar__.* call s:ShowPrototype(1)
+        autocmd WinEnter   __Tagbar__.* call s:SetStatusLine()
+        autocmd WinLeave   __Tagbar__.* call s:SetStatusLine()
 
         if g:tagbar_autopreview
-            autocmd CursorMoved __Tagbar__ nested call s:ShowInPreviewWin()
+            autocmd CursorMoved __Tagbar__.* nested call s:ShowInPreviewWin()
         endif
 
-        autocmd WinEnter * nested call s:QuitIfOnlyWindow()
-        autocmd WinEnter * if bufwinnr('__Tagbar__') == -1 |
+        autocmd QuitPre * let s:vim_quitting = 1
+        autocmd WinEnter * nested call s:HandleOnlyWindow()
+        autocmd WinEnter * if bufwinnr(s:TagbarBufName()) == -1 |
                          \     call s:ShrinkIfExpanded() |
                          \ endif
+        autocmd BufWinEnter * if exists('s:reopen_window') |
+                            \     unlet s:reopen_window |
+                            \     call s:OpenWindow('') |
+                            \ endif
 
         autocmd BufWritePost * call
                     \ s:AutoUpdate(fnamemodify(expand('<afile>'), ':p'), 1)
@@ -1051,10 +1059,12 @@ function! s:CreateAutocommands() abort
         autocmd BufDelete,BufWipeout * call
                     \ s:known_files.rm(fnamemodify(expand('<afile>'), ':p'))
 
-        autocmd QuickFixCmdPre  * let s:tagbar_qf_active = 1
-        autocmd QuickFixCmdPost * if exists('s:tagbar_qf_active') |
-                                \     unlet s:tagbar_qf_active |
-                                \ endif
+        " Suspend Tagbar while grep commands are running, since we don't want
+        " to process files that only get loaded temporarily to search them
+        autocmd QuickFixCmdPre  *grep* let s:tagbar_qf_active = 1
+        autocmd QuickFixCmdPost *grep* if exists('s:tagbar_qf_active') |
+                                     \     unlet s:tagbar_qf_active |
+                                     \ endif
 
         autocmd VimEnter * call s:CorrectFocusOnStartup()
     augroup END
@@ -1260,7 +1270,7 @@ function! s:BaseTag._init(name) abort dict
     let self.name          = a:name
     let self.fields        = {}
     let self.fields.line   = 0
-    let self.fields.column = 1
+    let self.fields.column = 0
     let self.prototype     = ''
     let self.path          = ''
     let self.fullpath      = a:name
@@ -1571,7 +1581,7 @@ endfunction
 
 " s:KindheaderTag.toggleFold() {{{3
 function! s:KindheaderTag.toggleFold() abort dict
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
 
     let fileinfo.kindfolds[self.short] = !fileinfo.kindfolds[self.short]
 endfunction
@@ -1701,15 +1711,19 @@ function! s:FileInfo.closeKindFold(kind) abort dict
     let self.kindfolds[a:kind.short] = 1
 endfunction
 
-" Known files {{{2
-let s:known_files = {
+" Per-tagbar instance state prototype {{{2
+let s:state = {
     \ '_current' : {},
     \ '_paused'  : {},
-    \ '_files'   : {}
 \ }
 
-" s:known_files.getCurrent() {{{3
-function! s:known_files.getCurrent(forcecurrent) abort dict
+" s:state.New() {{{3
+function! s:state.New() abort dict
+    return deepcopy(self)
+endfunction
+
+" s:state.getCurrent() {{{3
+function! s:state.getCurrent(forcecurrent) abort dict
     if !s:paused || a:forcecurrent
         return self._current
     else
@@ -1717,15 +1731,20 @@ function! s:known_files.getCurrent(forcecurrent) abort dict
     endif
 endfunction
 
-" s:known_files.setCurrent() {{{3
-function! s:known_files.setCurrent(fileinfo) abort dict
+" s:state.setCurrent() {{{3
+function! s:state.setCurrent(fileinfo) abort dict
     let self._current = a:fileinfo
 endfunction
 
-" s:known_files.setPaused() {{{3
-function! s:known_files.setPaused() abort dict
+" s:state.setPaused() {{{3
+function! s:state.setPaused() abort dict
     let self._paused = self._current
 endfunction
+
+" Known files {{{2
+let s:known_files = {
+    \ '_files'   : {}
+\ }
 
 " s:known_files.get() {{{3
 function! s:known_files.get(fname) abort dict
@@ -1761,7 +1780,7 @@ endfunction
 function! s:ToggleWindow() abort
     call s:debug('ToggleWindow called')
 
-    let tagbarwinnr = bufwinnr("__Tagbar__")
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
     if tagbarwinnr != -1
         call s:CloseWindow()
         return
@@ -1785,7 +1804,7 @@ function! s:OpenWindow(flags) abort
 
     " If the tagbar window is already open check jump flag
     " Also set the autoclose flag if requested
-    let tagbarwinnr = bufwinnr('__Tagbar__')
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
     if tagbarwinnr != -1
         if winnr() != tagbarwinnr && jump
             call s:goto_win(tagbarwinnr)
@@ -1822,7 +1841,7 @@ function! s:OpenWindow(flags) abort
         let openpos = g:tagbar_left ? 'leftabove ' : 'rightbelow '
         let width = g:tagbar_vertical
     endif
-    exe 'silent keepalt ' . openpos . width . 'split ' . '__Tagbar__'
+    exe 'silent keepalt ' . openpos . width . 'split ' . s:TagbarBufName()
     unlet s:window_opening
 
     call s:InitWindow(autoclose)
@@ -1849,6 +1868,8 @@ endfunction
 function! s:InitWindow(autoclose) abort
     call s:debug('InitWindow called with autoclose: ' . a:autoclose)
 
+    " Buffer-local options
+
     setlocal filetype=tagbar
 
     setlocal noreadonly " in case the "view" mode is used
@@ -1857,10 +1878,19 @@ function! s:InitWindow(autoclose) abort
     setlocal noswapfile
     setlocal nobuflisted
     setlocal nomodifiable
+    setlocal textwidth=0
+
+    if has('balloon_eval')
+        setlocal balloonexpr=TagbarBalloonExpr()
+        set ballooneval
+    endif
+
+
+    " Window-local options
+
     setlocal nolist
     setlocal nowrap
     setlocal winfixwidth
-    setlocal textwidth=0
     setlocal nospell
 
     if g:tagbar_show_linenumbers == 0
@@ -1887,16 +1917,12 @@ function! s:InitWindow(autoclose) abort
     setlocal foldmethod&
     setlocal foldexpr&
 
+
     let w:autoclose = a:autoclose
 
-    call s:SetStatusLine('current')
+    call s:SetStatusLine()
 
     let s:new_window = 1
-
-    if has('balloon_eval')
-        setlocal balloonexpr=TagbarBalloonExpr()
-        set ballooneval
-    endif
 
     let cpoptions_save = &cpoptions
     set cpoptions&vim
@@ -1918,7 +1944,7 @@ endfunction
 function! s:CloseWindow() abort
     call s:debug('CloseWindow called')
 
-    let tagbarwinnr = bufwinnr('__Tagbar__')
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
     if tagbarwinnr == -1
         return
     endif
@@ -1926,14 +1952,14 @@ function! s:CloseWindow() abort
     " Close the preview window if it was opened by us
     if s:pwin_by_tagbar
         pclose
-        let tagbarwinnr = bufwinnr('__Tagbar__')
+        let tagbarwinnr = bufwinnr(s:TagbarBufName())
     endif
 
     if winnr() == tagbarwinnr
         if winbufnr(2) != -1
             " Other windows are open, only close the tagbar one
 
-            let curfile = s:known_files.getCurrent(0)
+            let curfile = s:TagbarState().getCurrent(0)
 
             close
 
@@ -2034,8 +2060,8 @@ endfunction
 " g:tagbar_left is set. This should work around it by jumping to the window of
 " the current file after startup.
 function! s:CorrectFocusOnStartup() abort
-    if bufwinnr('__Tagbar__') != -1 && !g:tagbar_autofocus && !s:last_autofocus
-        let curfile = s:known_files.getCurrent(1)
+    if bufwinnr(s:TagbarBufName()) != -1 && !g:tagbar_autofocus && !s:last_autofocus
+        let curfile = s:TagbarState().getCurrent(1)
         if !empty(curfile) && curfile.fpath != fnamemodify(bufname('%'), ':p')
             let winnr = bufwinnr(curfile.fpath)
             if winnr != -1
@@ -2258,7 +2284,7 @@ function! s:ExecuteCtagsOnFile(fname, realfname, typeinfo) abort
         call s:debug(ctags_output)
         " Only display an error message if the Tagbar window is open and we
         " haven't seen the error before.
-        if bufwinnr("__Tagbar__") != -1 &&
+        if bufwinnr(s:TagbarBufName()) != -1 &&
          \ (!s:known_files.has(a:realfname) ||
          \ !empty(s:known_files.get(a:realfname)))
             call s:warning('Tagbar: Could not execute ctags for ' . a:realfname . '!')
@@ -2616,7 +2642,8 @@ function! s:CompareByKind(tag1, tag2) abort
             let name2 = a:tag2.name
         endif
 
-        if name1 <=# name2
+        let ci = g:tagbar_case_insensitive
+        if (((!ci) && (name1 <=# name2)) || (ci && (name1 <=? name2)))
             return -1
         else
             return 1
@@ -2631,7 +2658,7 @@ endfunction
 
 " s:ToggleSort() {{{2
 function! s:ToggleSort() abort
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
     if empty(fileinfo)
         return
     endif
@@ -2653,7 +2680,7 @@ function! s:ToggleSort() abort
     call fileinfo.sortTags()
 
     call s:RenderContent()
-    call s:SetStatusLine('current')
+    call s:SetStatusLine()
 
     " If we were on a tag before sorting then jump to it, otherwise restore
     " the cursor to the current line
@@ -2673,7 +2700,7 @@ function! s:RenderContent(...) abort
     if a:0 == 1
         let fileinfo = a:1
     else
-        let fileinfo = s:known_files.getCurrent(0)
+        let fileinfo = s:TagbarState().getCurrent(0)
     endif
 
     if empty(fileinfo)
@@ -2681,7 +2708,7 @@ function! s:RenderContent(...) abort
         return
     endif
 
-    let tagbarwinnr = bufwinnr('__Tagbar__')
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
 
     if &filetype == 'tagbar'
         let in_tagbar = 1
@@ -2698,8 +2725,8 @@ function! s:RenderContent(...) abort
         call s:goto_win(tagbarwinnr, 1)
     endif
 
-    if !empty(s:known_files.getCurrent(0)) &&
-     \ fileinfo.fpath ==# s:known_files.getCurrent(0).fpath
+    if !empty(s:TagbarState().getCurrent(0)) &&
+     \ fileinfo.fpath ==# s:TagbarState().getCurrent(0).fpath
         " We're redisplaying the same file, so save the view
         call s:debug('Redisplaying file [' . fileinfo.fpath . ']')
         let saveline = line('.')
@@ -2743,8 +2770,8 @@ function! s:RenderContent(...) abort
 
     setlocal nomodifiable
 
-    if !empty(s:known_files.getCurrent(0)) &&
-     \ fileinfo.fpath ==# s:known_files.getCurrent(0).fpath
+    if !empty(s:TagbarState().getCurrent(0)) &&
+     \ fileinfo.fpath ==# s:TagbarState().getCurrent(0).fpath
         let scrolloff_save = &scrolloff
         set scrolloff=0
 
@@ -2927,6 +2954,7 @@ function! s:PrintHelp() abort
         silent  put ='\"'
         silent  put ='\" ---------- Misc -----------'
         silent  put ='\" ' . s:get_map_str('togglesort') . ': Toggle sort'
+        silent  put ='\" ' . s:get_map_str('togglecaseinsensitive') . ': Toggle case insensitive sort option'
         silent  put ='\" ' . s:get_map_str('toggleautoclose') . ': Toggle autoclose option'
         silent  put ='\" ' . s:get_map_str('zoomwin') . ': Zoom window in/out'
         silent  put ='\" ' . s:get_map_str('close') . ': Close window'
@@ -2994,7 +3022,7 @@ function! s:HighlightTag(openfolds, ...) abort
         let s:last_highlight_tline = tagline
     endif
 
-    let tagbarwinnr = bufwinnr('__Tagbar__')
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
     if tagbarwinnr == -1
         return
     endif
@@ -3095,9 +3123,15 @@ function! s:JumpToTag(stay_in_tagbar) abort
         let taginfo.fileinfo.fline[curline] = taginfo
     endif
 
-    " Center the tag in the window and jump to the correct column if available
+    " Center the tag in the window and jump to the correct column if
+    " available, otherwise try to find it in the line
     normal! z.
-    call cursor(taginfo.fields.line, taginfo.fields.column)
+    if taginfo.fields.column > 0
+        call cursor(taginfo.fields.line, taginfo.fields.column)
+    else
+        call cursor(taginfo.fields.line, 1)
+        call search(taginfo.name, 'c', line('.'))
+    endif
 
     normal! zv
 
@@ -3237,7 +3271,7 @@ endfunction
 " Folding {{{1
 " s:OpenFold() {{{2
 function! s:OpenFold() abort
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
     if empty(fileinfo)
         return
     endif
@@ -3256,7 +3290,7 @@ endfunction
 
 " s:CloseFold() {{{2
 function! s:CloseFold() abort
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
     if empty(fileinfo)
         return
     endif
@@ -3277,7 +3311,7 @@ endfunction
 
 " s:ToggleFold() {{{2
 function! s:ToggleFold() abort
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
     if empty(fileinfo)
         return
     endif
@@ -3313,7 +3347,7 @@ function! s:SetFoldLevel(level, force) abort
         return
     endif
 
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
     if empty(fileinfo)
         return
     endif
@@ -3507,10 +3541,10 @@ function! s:AutoUpdate(fname, force) abort
 
     " Display the tagbar content if the tags have been updated or a different
     " file is being displayed
-    if bufwinnr('__Tagbar__') != -1 && !s:paused &&
+    if bufwinnr(s:TagbarBufName()) != -1 && !s:paused &&
      \ (s:new_window || updated ||
-      \ (!empty(s:known_files.getCurrent(0)) &&
-       \ a:fname != s:known_files.getCurrent(0).fpath))
+      \ (!empty(s:TagbarState().getCurrent(0)) &&
+       \ a:fname != s:TagbarState().getCurrent(0).fpath))
         call s:RenderContent(fileinfo)
     endif
 
@@ -3518,12 +3552,12 @@ function! s:AutoUpdate(fname, force) abort
     " same file is being redisplayed
     if !empty(fileinfo)
         call s:debug('Setting current file [' . a:fname . ']')
-        call s:known_files.setCurrent(fileinfo)
+        call s:TagbarState().setCurrent(fileinfo)
         let s:nearby_disabled = 0
     endif
 
     call s:HighlightTag(0)
-    call s:SetStatusLine('noncurrent')
+    call s:SetStatusLine()
     call s:debug('AutoUpdate finished successfully')
 endfunction
 
@@ -3734,7 +3768,7 @@ function! s:GetNearbyTag(all, forcecurrent, ...) abort
         return {}
     endif
 
-    let fileinfo = s:known_files.getCurrent(a:forcecurrent)
+    let fileinfo = s:TagbarState().getCurrent(a:forcecurrent)
     if empty(fileinfo)
         return {}
     endif
@@ -3770,14 +3804,14 @@ endfunction
 " does not contain a valid tag (for example because it is empty or only
 " contains a pseudo-tag) return an empty dictionary.
 function! s:GetTagInfo(linenr, ignorepseudo) abort
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
 
     if empty(fileinfo)
         return {}
     endif
 
     " Don't do anything in empty and comment lines
-    let curline = getbufline(bufnr('__Tagbar__'), a:linenr)[0]
+    let curline = getbufline(bufnr(s:TagbarBufName()), a:linenr)[0]
     if curline =~ '^\s*$' || curline[0] == '"'
         return {}
     endif
@@ -3856,7 +3890,7 @@ endfunction
 
 " s:ToggleHideNonPublicTags() {{{2
 function! s:ToggleHideNonPublicTags() abort
-    let fileinfo = s:known_files.getCurrent(0)
+    let fileinfo = s:TagbarState().getCurrent(0)
     if empty(fileinfo)
         return
     endif
@@ -3869,7 +3903,36 @@ function! s:ToggleHideNonPublicTags() abort
 
     let g:tagbar_hide_nonpublic = !g:tagbar_hide_nonpublic
     call s:RenderKeepView()
-    call s:SetStatusLine('current')
+    call s:SetStatusLine()
+
+    " If we were on a tag before sorting then jump to it, otherwise restore
+    " the cursor to the current line
+    if !empty(taginfo)
+        execute taginfo.tline
+    else
+        execute curline
+    endif
+endfunction
+
+" s:ToggleCaseInsensitive() {{{2
+function! s:ToggleCaseInsensitive() abort
+    let fileinfo = s:TagbarState().getCurrent(0)
+    if empty(fileinfo)
+        return
+    endif
+
+    " Save the tag the cursor is currently on
+    let curline = line('.')
+    let taginfo = s:GetTagInfo(curline, 0)
+
+    match none
+
+    let g:tagbar_case_insensitive = !g:tagbar_case_insensitive
+
+    call fileinfo.sortTags()
+
+    call s:RenderKeepView()
+    call s:SetStatusLine()
 
     " If we were on a tag before sorting then jump to it, otherwise restore
     " the cursor to the current line
@@ -3883,7 +3946,7 @@ endfunction
 " s:ToggleAutoclose() {{{2
 function! s:ToggleAutoclose() abort
     let g:tagbar_autoclose = !g:tagbar_autoclose
-    call s:SetStatusLine('current')
+    call s:SetStatusLine()
 endfunction
 
 " s:IsValidFile() {{{2
@@ -3925,9 +3988,9 @@ function! s:IsValidFile(fname, ftype) abort
 endfunction
 
 " s:SetStatusLine() {{{2
-function! s:SetStatusLine(current)
+function! s:SetStatusLine()
     " Make sure we're actually in the Tagbar window
-    let tagbarwinnr = bufwinnr('__Tagbar__')
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
     if tagbarwinnr == -1
         return
     endif
@@ -3937,12 +4000,11 @@ function! s:SetStatusLine(current)
     else
         let in_tagbar = 1
     endif
-    let current = a:current == 'current'
 
     let sort = g:tagbar_sort ? 'Name' : 'Order'
 
-    if !empty(s:known_files.getCurrent(0))
-        let fname = fnamemodify(s:known_files.getCurrent(0).fpath, ':t')
+    if !empty(s:TagbarState().getCurrent(0))
+        let fname = fnamemodify(s:TagbarState().getCurrent(0).fpath, ':t')
     else
         let fname = ''
     endif
@@ -3950,13 +4012,14 @@ function! s:SetStatusLine(current)
     let flags = []
     let flags += exists('w:autoclose') && w:autoclose ? ['c'] : []
     let flags += g:tagbar_autoclose ? ['C'] : []
+    let flags += (g:tagbar_sort && g:tagbar_case_insensitive) ? ['i'] : []
     let flags += g:tagbar_hide_nonpublic ? ['v'] : []
 
     if exists('g:tagbar_status_func')
-        let args = [current, sort, fname, flags]
+        let args = [in_tagbar, sort, fname, flags]
         let &l:statusline = call(g:tagbar_status_func, args)
     else
-        let colour = current ? '%#StatusLine#' : '%#StatusLineNC#'
+        let colour = in_tagbar ? '%#StatusLine#' : '%#StatusLineNC#'
         let flagstr = join(flags, '')
         if flagstr != ''
             let flagstr = '[' . flagstr . '] '
@@ -3970,12 +4033,15 @@ function! s:SetStatusLine(current)
     endif
 endfunction
 
-" s:QuitIfOnlyWindow() {{{2
-function! s:QuitIfOnlyWindow() abort
-    let tagbarwinnr = bufwinnr('__Tagbar__')
-    if tagbarwinnr == -1
+" s:HandleOnlyWindow() {{{2
+function! s:HandleOnlyWindow() abort
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
+    if tagbarwinnr == -1 || exists('s:reopen_window')
         return
     endif
+
+    let vim_quitting = s:vim_quitting
+    let s:vim_quitting = 0
 
     let curwinnr = winnr()
     let prevwinnr = winnr('#') == 0 ? curwinnr : winnr('#')
@@ -3984,7 +4050,7 @@ function! s:QuitIfOnlyWindow() abort
     " Check if there is more than one window
     if s:NextNormalWindow() == -1
         " Check if there is more than one tab page
-        if tabpagenr('$') == 1
+        if tabpagenr('$') == 1 && vim_quitting
             " Before quitting Vim, delete the tagbar buffer so that
             " the '0 mark is correctly set to the previous buffer.
             " Also disable autocmd on this command to avoid unnecessary
@@ -3993,13 +4059,29 @@ function! s:QuitIfOnlyWindow() abort
                 noautocmd bdelete
             endif
             quit
-        else
+        elseif tabpagenr('$') == 1
+            " The last normal window closed due to a :bdelete/:bwipeout.
+            " In order to get a normal file window back delete the Tagbar
+            " buffer that we're currently displaying and reset the Tagbar-set
+            " window options, and then re-open the Tagbar window once Vim has
+            " switched to the buffer it has chosen to display next.
+            noautocmd bdelete
+            set winfixwidth<
+            let s:reopen_window = 1
+        elseif exists('t:tagbar_buf_name')
             close
         endif
     endif
 
-    call s:goto_win(prevwinnr, 1)
-    call s:goto_win(curwinnr, 1)
+    " Check that prevwinnr is still a valid window number
+    if prevwinnr != tagbarwinnr && prevwinnr <= winnr('$')
+        call s:goto_win(prevwinnr, 1)
+    endif
+
+    " Check that curwinnr is still a valid window number
+    if curwinnr <= winnr('$')
+        call s:goto_win(curwinnr, 1)
+    endif
 endfunction
 
 " s:NextNormalWindow() {{{2
@@ -4007,8 +4089,8 @@ function! s:NextNormalWindow() abort
     for i in range(1, winnr('$'))
         let buf = winbufnr(i)
 
-        " skip unlisted buffers
-        if !buflisted(buf)
+        " skip unlisted buffers, except for netrw
+        if !buflisted(buf) && getbufvar(buf, '&filetype') != 'netrw'
             continue
         endif
 
@@ -4033,6 +4115,25 @@ function! s:NextNormalWindow() abort
     return -1
 endfunction
 
+" s:TagbarBufName() {{{2
+function! s:TagbarBufName() abort
+    if !exists('t:tagbar_buf_name')
+        let s:buffer_seqno += 1
+        let t:tagbar_buf_name = '__Tagbar__.' . s:buffer_seqno
+    endif
+
+    return t:tagbar_buf_name
+endfunction
+
+" s:TagbarState() {{{2
+function! s:TagbarState() abort
+    if !exists('t:tagbar_state')
+        let t:tagbar_state = s:state.New()
+    endif
+
+    return t:tagbar_state
+endfunction
+
 " s:goto_win() {{{2
 function! s:goto_win(winnr, ...) abort
     let cmd = type(a:winnr) == type(0) ? a:winnr . 'wincmd w'
@@ -4051,7 +4152,7 @@ endfunction
 " s:goto_tagbar() {{{2
 function! s:goto_tagbar(...) abort
     let noauto = a:0 > 0 ? a:1 : 0
-    call s:goto_win(bufwinnr('__Tagbar__'), noauto)
+    call s:goto_win(bufwinnr(s:TagbarBufName()), noauto)
 endfunction
 
 " s:mark_window() {{{2
@@ -4161,7 +4262,7 @@ function! tagbar#SetFoldLevel(level, force) abort
 endfunction
 
 function! tagbar#highlighttag(openfolds, force) abort
-    let tagbarwinnr = bufwinnr('__Tagbar__')
+    let tagbarwinnr = bufwinnr(s:TagbarBufName())
     if tagbarwinnr == -1
         echohl WarningMsg
         echomsg "Warning: Can't highlight tag, Tagbar window not open"
@@ -4191,7 +4292,7 @@ function! tagbar#toggle_pause() abort
     let s:paused = !s:paused
 
     if s:paused
-        call s:known_files.setPaused()
+        call s:TagbarState().setPaused()
     else
         call s:AutoUpdate(fnamemodify(expand('%'), ':p'), 1)
     endif
@@ -4272,8 +4373,8 @@ endfunction
 function! tagbar#currentfile() abort
     let filename = ''
 
-    if !empty(s:known_files.getCurrent(1))
-        let filename = fnamemodify(s:known_files.getCurrent(1).fpath, ':t')
+    if !empty(s:TagbarState().getCurrent(1))
+        let filename = fnamemodify(s:TagbarState().getCurrent(1).fpath, ':t')
     endif
 
     return filename

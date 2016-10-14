@@ -1,5 +1,5 @@
 " CREATION     : 2015-12-21
-" MODIFICATION : 2016-07-19
+" MODIFICATION : 2016-10-07
 
 " VARIABLES
 " =====================================================================
@@ -9,6 +9,11 @@ if !exists('g:zv_zeal_executable')
 				\ 'zeal' :
 				\ $ProgramFiles . '\Zeal\zeal.exe'
 endif
+" Arguments for the executable {{{1
+let g:zv_zeal_args = exists('g:zv_zeal_args') ?
+			\	g:zv_zeal_args : ''
+" Keep or not the focus (Need wmctrl ond works only on GNU/linux) {{{1
+let g:zv_keep_focus = get(g:, 'zv_keep_focus', 1)
 " Set Zeal's docset directory location {{{1
 if !exists('g:zv_docsets_dir')
 	let g:zv_docsets_dir = has('unix') ?
@@ -101,7 +106,7 @@ function! s:SetDocset() abort " {{{1
 
 	let l:docset = !empty(getbufvar('%', 'manualDocset')) ?
 				\	getbufvar('%', 'manualDocset') :
-				\	s:GetDocset(expand('%:p:t'), expand('%:e'), &ft)
+				\	s:GetDocset(expand('%:p:t'), expand('%:e:e'), &ft)
 	return tolower(l:docset)
 endfunction
 function! s:GetVisualSelection() abort " {{{1
@@ -131,12 +136,13 @@ function! s:Zeal(docset, query) abort " {{{1
 
 	let l:docset = !empty(a:docset) ? tr(a:docset, '_', ' ') . ':' : ''
 	let l:query = !empty(a:query) ? escape(a:query, '#%') : ''
-	let l:focus = has('unix') && executable('wmctrl') && v:windowid !=# 0 ?
-				\ '&& wmctrl -ia ' . v:windowid . ' ' :
-				\ ''
-	let l:cmd = printf('!%s%s %s %s%s &',
+	let l:focus = g:zv_keep_focus && has('unix') &&
+				\	executable('wmctrl') && v:windowid !=# 0 ?
+				\		'&& wmctrl -ia ' . v:windowid . ' ' : ''
+	let l:cmd = printf('!%s%s %s %s %s%s &',
 				\ (has('unix') ? '' : 'start '),
 				\ g:zv_zeal_executable,
+				\ g:zv_zeal_args,
 				\ shellescape(l:docset . l:query),
 				\ l:focus,
 				\ (has('unix') ? '2> /dev/null' : '')
@@ -147,13 +153,12 @@ endfunction
 " }}}
 
 function! zeavim#SearchFor(...) abort " {{{1
-	" args: (bang, query, [line1, line2])
+	" args: (bang, query, visual)
 	" If bang
 	"	Execute s:FromInput()
 	" If no bang, execute Zeal with:
 	"	query
-	"	or visual selection if [line1, line2] is different from [1,
-	"	last line]
+	"	or visual selection if a:visal is not empty
 
 	if !s:CheckExecutable()
 		return 0
@@ -161,7 +166,7 @@ function! zeavim#SearchFor(...) abort " {{{1
 
 	let l:bang = exists('a:1') ? a:1 : ''
 	let l:query = exists('a:2') ? a:2 : ''
-	let l:visual = exists('a:3') && a:3 !=# [1, line('$')]
+	let l:visual = exists('a:3') && !empty(a:3) ? 1 : 0
 
 	if l:bang ==# '!'
 		let [l:s, l:d] = s:FromInput()
