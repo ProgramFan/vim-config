@@ -28,7 +28,6 @@ from builtins import *  # noqa
 import os
 import subprocess
 import tempfile
-from shutil import rmtree
 import ycm_core
 from future.utils import native
 from mock import patch, call
@@ -289,26 +288,6 @@ def ToCppStringCompatible_Py3Int_test():
   eq_( vector[ 0 ], '123' )
 
 
-def PathToCreatedTempDir_DirDoesntExist_test():
-  tempdir = PathToTestFile( 'tempdir' )
-  rmtree( tempdir, ignore_errors = True )
-
-  try:
-    eq_( utils.PathToCreatedTempDir( tempdir ), tempdir )
-  finally:
-    rmtree( tempdir, ignore_errors = True )
-
-
-def PathToCreatedTempDir_DirDoesExist_test():
-  tempdir = PathToTestFile( 'tempdir' )
-  os.makedirs( tempdir )
-
-  try:
-    eq_( utils.PathToCreatedTempDir( tempdir ), tempdir )
-  finally:
-    rmtree( tempdir, ignore_errors = True )
-
-
 def RemoveIfExists_Exists_test():
   tempfile = PathToTestFile( 'remove-if-exists' )
   open( tempfile, 'a' ).close()
@@ -567,3 +546,15 @@ def FindExecutable_CurrentDirectory_test():
 def FindExecutable_AdditionalPathExt_test():
   with TemporaryExecutable( extension = '.xyz' ) as executable:
     eq_( executable, utils.FindExecutable( executable ) )
+
+
+@Py2Only
+def GetCurrentDirectory_Py2NoCurrentDirectory_test():
+  with patch( 'os.getcwdu', side_effect = OSError ):
+    eq_( utils.GetCurrentDirectory(), tempfile.gettempdir() )
+
+
+@Py3Only
+def GetCurrentDirectory_Py3NoCurrentDirectory_test():
+  with patch( 'os.getcwd', side_effect = FileNotFoundError ): # noqa
+    eq_( utils.GetCurrentDirectory(), tempfile.gettempdir() )

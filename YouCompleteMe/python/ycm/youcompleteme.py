@@ -1,4 +1,5 @@
-# Copyright (C) 2011, 2012  Google Inc.
+# Copyright (C) 2011-2012 Google Inc.
+#               2016      YouCompleteMe contributors
 #
 # This file is part of YouCompleteMe.
 #
@@ -98,6 +99,7 @@ CORE_OUTDATED_MESSAGE = (
   'script. See the documentation for more details.' )
 SERVER_IDLE_SUICIDE_SECONDS = 10800  # 3 hours
 DIAGNOSTIC_UI_FILETYPES = set( [ 'cpp', 'cs', 'c', 'objc', 'objcpp' ] )
+LOGFILE_FORMAT = 'ycmd_{port}_{std}_'
 
 
 class YouCompleteMe( object ):
@@ -142,13 +144,10 @@ class YouCompleteMe( object ):
                '--idle_suicide_seconds={0}'.format(
                   SERVER_IDLE_SUICIDE_SECONDS ) ]
 
-      filename_format = os.path.join( utils.PathToCreatedTempDir(),
-                                      'server_{port}_{std}.log' )
-
-      self._server_stdout = filename_format.format( port = server_port,
-                                                    std = 'stdout' )
-      self._server_stderr = filename_format.format( port = server_port,
-                                                    std = 'stderr' )
+      self._server_stdout = utils.CreateLogfile(
+          LOGFILE_FORMAT.format( port = server_port, std = 'stdout' ) )
+      self._server_stderr = utils.CreateLogfile(
+          LOGFILE_FORMAT.format( port = server_port, std = 'stderr' ) )
       args.append( '--stdout={0}'.format( self._server_stdout ) )
       args.append( '--stderr={0}'.format( self._server_stderr ) )
 
@@ -225,7 +224,7 @@ class YouCompleteMe( object ):
             self._omnicomp, wrapped_request_data )
         return self._latest_completion_request
 
-    request_data[ 'working_dir' ] = os.getcwd()
+    request_data[ 'working_dir' ] = utils.GetCurrentDirectory()
 
     self._AddExtraConfDataIfNeeded( request_data )
     if force_semantic:
@@ -319,10 +318,7 @@ class YouCompleteMe( object ):
   def OnBufferUnload( self, deleted_buffer_file ):
     if not self.IsServerAlive():
       return
-    SendEventNotificationAsync(
-      'BufferUnload',
-      filepath = deleted_buffer_file,
-      extra_data = { 'unloaded_buffer': deleted_buffer_file } )
+    SendEventNotificationAsync( 'BufferUnload', filepath = deleted_buffer_file )
 
 
   def OnBufferVisit( self ):
@@ -677,12 +673,8 @@ class YouCompleteMe( object ):
   def _AddTagsFilesIfNeeded( self, extra_data ):
     def GetTagFiles():
       tag_files = vim.eval( 'tagfiles()' )
-      # getcwd() throws an exception when the CWD has been deleted.
-      try:
-        current_working_directory = os.getcwd()
-      except OSError:
-        return []
-      return [ os.path.join( current_working_directory, x ) for x in tag_files ]
+      return [ os.path.join( utils.GetCurrentDirectory(), tag_file )
+               for tag_file in tag_files ]
 
     if not self._user_options[ 'collect_identifiers_from_tags_files' ]:
       return

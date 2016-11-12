@@ -58,6 +58,8 @@ PATH_TO_NODE = utils.PathToFirstExistingExecutable( [ 'node' ] )
 # address. (ahem: Windows)
 SERVER_HOST = '127.0.0.1'
 
+LOGFILE_FORMAT = 'tern_{port}_{std}_'
+
 
 def ShouldEnableTernCompleter():
   """Returns whether or not the tern completer is 'installed'. That is whether
@@ -154,11 +156,12 @@ class TernCompleter( Completer ):
     if self._ServerIsRunning() and self._do_tern_project_check:
       self._do_tern_project_check = False
 
-      ( tern_project, is_project ) = FindTernProjectFile( os.getcwd() )
+      current_dir = utils.GetCurrentDirectory()
+      ( tern_project, is_project ) = FindTernProjectFile( current_dir )
       if not tern_project:
-        _logger.warning( 'No .tern-project file detected: ' + os.getcwd() )
+        _logger.warning( 'No .tern-project file detected: ' + current_dir )
         raise RuntimeError( 'Warning: Unable to detect a .tern-project file '
-                            'in the hierarchy before ' + os.getcwd() +
+                            'in the hierarchy before ' + current_dir +
                             ' and no global .tern-config file was found. '
                             'This is required for accurate JavaScript '
                             'completion. Please see the User Guide for '
@@ -170,7 +173,7 @@ class TernCompleter( Completer ):
         # are relative to the working directory of Tern server (which is the
         # same as the working directory of ycmd).
         self._server_paths_relative_to = (
-          os.path.dirname( tern_project ) if is_project else os.getcwd() )
+          os.path.dirname( tern_project ) if is_project else current_dir )
 
         _logger.info( 'Tern paths are relative to: '
                       + self._server_paths_relative_to )
@@ -420,16 +423,11 @@ class TernCompleter( Completer ):
                     + ' '.join( command ) )
 
       try:
-        logfile_format = os.path.join( utils.PathToCreatedTempDir(),
-                                      u'tern_{port}_{std}.log' )
+        self._server_stdout = utils.CreateLogfile(
+            LOGFILE_FORMAT.format( port = self._server_port, std = 'stdout' ) )
 
-        self._server_stdout = logfile_format.format(
-            port = self._server_port,
-            std = 'stdout' )
-
-        self._server_stderr = logfile_format.format(
-            port = self._server_port,
-            std = 'stderr' )
+        self._server_stderr = utils.CreateLogfile(
+            LOGFILE_FORMAT.format( port = self._server_port, std = 'stderr' ) )
 
         # We need to open a pipe to stdin or the Tern server is killed.
         # See https://github.com/ternjs/tern/issues/740#issuecomment-203979749
