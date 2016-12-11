@@ -19,8 +19,7 @@ Plug 'majutsushi/tagbar'
 Plug 'Raimondi/delimitMate'
 
 " Markdown: markdown writing environment with pandoc
-Plug 'godlygeek/tabular'
-Plug 'dhruvasagar/vim-table-mode'
+Plug 'junegunn/vim-easy-align'
 Plug 'vim-pandoc/vim-pandoc-syntax'
 Plug 'vim-pandoc/vim-pandoc-after'
 Plug 'vim-pandoc/vim-pandoc'
@@ -61,7 +60,6 @@ Plug 'Chiel92/vim-autoformat'
 
 Plug 'GCBallesteros/vim-autocite'
 Plug 'tomtom/tcomment_vim'
-Plug 'junegunn/vim-easy-align'
 Plug 'kchmck/vim-coffee-script'
 
 Plug 'KabbAmine/zeavim.vim'
