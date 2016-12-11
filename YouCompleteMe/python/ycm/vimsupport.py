@@ -919,6 +919,8 @@ def WriteToPreviewWindow( message ):
     vim.current.buffer[:] = message.splitlines()
 
     vim.current.buffer.options[ 'buftype' ]    = 'nofile'
+    vim.current.buffer.options[ 'bufhidden' ]  = 'wipe'
+    vim.current.buffer.options[ 'buflisted' ]  = False
     vim.current.buffer.options[ 'swapfile' ]   = False
     vim.current.buffer.options[ 'modifiable' ] = False
     vim.current.buffer.options[ 'readonly' ]   = True
@@ -933,20 +935,6 @@ def WriteToPreviewWindow( message ):
     # the information we have. The only remaining option is to echo to the
     # status area.
     PostVimMessage( message, warning = False )
-
-
-def CheckFilename( filename ):
-  """Check if filename is openable."""
-  try:
-    # We don't want to check for encoding issues when trying to open the file
-    # so we open it in binary mode.
-    open( filename, mode = 'rb' ).close()
-  except TypeError:
-    raise RuntimeError( "'{0}' is not a valid filename".format( filename ) )
-  except IOError as error:
-    raise RuntimeError(
-      "filename '{0}' cannot be opened. {1}.".format( filename,
-                                                      error.strerror ) )
 
 
 def BufferIsVisibleForFilename( filename ):
@@ -996,8 +984,7 @@ def OpenFilename( filename, options = {} ):
   else:
     previous_tab = None
 
-  # Open the file
-  CheckFilename( filename )
+  # Open the file.
   try:
     vim.command( '{0}{1} {2}'.format( size, command, filename ) )
   # When the file we are trying to jump to has a swap file,

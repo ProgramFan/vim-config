@@ -21,12 +21,12 @@ class Source(Base):
         if not context['args']:
             return []
         candidates = self.vim.call('unite#get_candidates',
-                                   [context['args'][0]])
+                                   [context['args']])
         # Convert the attributes for compatibility.
         for candidate in candidates:
             candidate['source__candidate'] = copy(candidate)
             candidate['kind'] = 'unite'
             candidate['word'] = sub(r'\n.*', r'', candidate['word'])
-            if 'abbr' in candidate:
-                candidate['abbr'] = sub(r'\n.*', r'', candidate['abbr'])
+            candidate['abbr'] = candidate['source'] + ': ' + sub(
+                r'\n.*', r'', candidate.get('abbr', candidate['word']))
         return candidates
