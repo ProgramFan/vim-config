@@ -31,6 +31,7 @@ Plug 'vim-airline/vim-airline-themes'
 Plug 'edkolev/tmuxline.vim'
 Plug 'edkolev/promptline.vim'
 
+Plug 'sheerun/vim-polyglot'
 
 " vim for writers
 Plug 'reedes/vim-pencil'
@@ -53,14 +54,12 @@ Plug 'Valloric/YouCompleteMe'
 Plug 'scrooloose/syntastic'
 Plug 'vim-scripts/DoxygenToolkit.vim', { 'for': ['c', 'cpp'] }
 Plug 'klen/python-mode', { 'for': 'python' }
-Plug 'leshill/vim-json', { 'for': 'json' }
 Plug 'SirVer/ultisnips'
 
 Plug 'Chiel92/vim-autoformat'
 
 Plug 'GCBallesteros/vim-autocite'
 Plug 'tomtom/tcomment_vim'
-Plug 'kchmck/vim-coffee-script'
 
 Plug 'KabbAmine/zeavim.vim'
 Plug 'rizzatti/dash.vim'
