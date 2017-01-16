@@ -23,9 +23,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import *  # noqa
 
-from requests.exceptions import ReadTimeout
-
-from ycm.client.base_request import BaseRequest
+from ycm.client.base_request import BaseRequest, HandleServerException
 
 TIMEOUT_SECONDS = 0.1
 
@@ -36,12 +34,8 @@ class ShutdownRequest( BaseRequest ):
 
 
   def Start( self ):
-    try:
-      self.PostDataToHandler( {},
-                              'shutdown',
-                              TIMEOUT_SECONDS )
-    except ReadTimeout:
-      pass
+    with HandleServerException( display = False ):
+      self.PostDataToHandler( {}, 'shutdown', TIMEOUT_SECONDS )
 
 
 def SendShutdownRequest():

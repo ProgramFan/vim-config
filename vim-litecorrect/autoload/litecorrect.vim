@@ -25,7 +25,10 @@ function! litecorrect#init(...)
   ia <buffer> THat That
   ia <buffer> THe The
   ia <buffer> Teh The
+  ia <buffer> Theyare They are
+  ia <buffer> Youre You're
   ia <buffer> abotu about
+  ia <buffer> aboutit about it
   ia <buffer> acn can
   ia <buffer> adn and
   ia <buffer> aer are
@@ -142,6 +145,8 @@ function! litecorrect#init(...)
   ia <buffer> inot into
   ia <buffer> inteh in the
   ia <buffer> inthe in the
+  ia <buffer> inthese in these
+  ia <buffer> inthis in this
   ia <buffer> inwhich in which
   ia <buffer> isthe is the
   ia <buffer> isze size
@@ -186,6 +191,7 @@ function! litecorrect#init(...)
   ia <buffer> mysefl myself
   ia <buffer> myu my
   ia <buffer> nad and
+  ia <buffer> niether neither
   ia <buffer> nkow know
   ia <buffer> nkwo know
   ia <buffer> nmae name
@@ -242,12 +248,14 @@ function! litecorrect#init(...)
   ia <buffer> tehy they
   ia <buffer> tghe the
   ia <buffer> tghis this
+  ia <buffer> thanit than it
   ia <buffer> thansk thanks
   ia <buffer> thast that
   ia <buffer> thats that's
   ia <buffer> thatthe that the
   ia <buffer> theh then
   ia <buffer> theri their
+  ia <buffer> theyare they are
   ia <buffer> thgat that
   ia <buffer> thge the
   ia <buffer> thier their
@@ -283,6 +291,7 @@ function! litecorrect#init(...)
   ia <buffer> tyhe the
   ia <buffer> tyhe they
   ia <buffer> uise use
+  ia <buffer> untill until
   ia <buffer> veyr very
   ia <buffer> vrey very
   ia <buffer> waht what
@@ -305,6 +314,7 @@ function! litecorrect#init(...)
   ia <buffer> witha with a
   ia <buffer> withe with
   ia <buffer> withh with
+  ia <buffer> withit with it
   ia <buffer> witht with
   ia <buffer> withthe with the
   ia <buffer> witn with
