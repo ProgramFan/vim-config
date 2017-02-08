@@ -10,6 +10,7 @@ from subprocess import Popen, PIPE
 from vim_pandoc.utils import plugin_enabled_modules
 from vim_pandoc.bib.vim_completer import find_bibfiles
 
+# pandoc's markdown extensions {{{1
 markdown_extensions = [
         "escaped_line_breaks",
         "blank_before_header",
@@ -61,7 +62,7 @@ markdown_extensions = [
         "mmd_header_identifiers",
         "compact_definition_lists"
         ]
-
+#}}}
 def get_pandoc_version():
     data = str(Popen(["pandoc", "--version"], stdout=PIPE).communicate()[0])
     m = re.search("pandoc (\d+\.\d+)", data)
@@ -70,6 +71,8 @@ def get_pandoc_version():
 
 def get_raw_pandoc_data(pattern, cmd="--help"):
     data = Popen(["pandoc", cmd], stdout=PIPE).communicate()[0]
+    if type(data) == bytes:
+        data = data.decode()
     if cmd == "--help":
         return re.search(pattern, data, re.DOTALL).group(1)
     else:
@@ -202,8 +205,9 @@ class PandocCommand(object):
             buffer_bibliographies = vim.eval('b:pandoc_biblio_bibs')
             if len(buffer_bibliographies) < 1:
                 buffer_bibliographies = find_bibfiles()
-            bib_arg = " ".join(['--bibliography "' + i  + '"' for i in buffer_bibliographies]) if \
-                    len(buffer_bibliographies) > 0 \
+            bib_arg = " ".join(['--bibliography "' + i  + '"' \
+                                for i in buffer_bibliographies]) \
+                    if len(buffer_bibliographies) > 0 \
                     else ""
         else:
             bib_arg = ""
@@ -213,7 +217,15 @@ class PandocCommand(object):
                 not bool(vim.vars["pandoc#filetypes#pandoc_markdown"]) \
                 else ""
 
-        c_opts, c_args = getopt.gnu_getopt(shlex.split(args), self.opts.shortopts, self.opts.longopts)
+        if re.search('--mathjax( |$)', args):
+            args = re.sub('--mathjax', '', args)
+            extra_mathjax = True
+        else:
+            extra_mathjax = False
+
+        c_opts, c_args = getopt.gnu_getopt(shlex.split(args),
+                                           self.opts.shortopts,
+                                           self.opts.longopts)
         def wrap_args(i):
             if re.search('=', i[1]):
                 return (i[0], re.sub('$', '"', re.sub('(.*)=', '\\1="', i[1])))
@@ -221,16 +233,30 @@ class PandocCommand(object):
                 return (i[0], i[1])
         c_opts = [wrap_args(i) for i in c_opts]
 
-        output_format = c_args.pop(0) if len(c_args) > 0 and self.opts.in_allowed_formats(c_args[0]) else "html"
-        output_format_arg = "-t " + output_format if output_format != "pdf" else ""
+        output_format = c_args.pop(0) \
+            if len(c_args) > 0 \
+                and self.opts.in_allowed_formats(c_args[0]) \
+            else "html"
+        output_format_arg = "-t " + output_format if output_format != "pdf" \
+                            else ""
 
-        def no_extensions(fmt):
+        def no_ext(fmt):
             return re.split("[-+]", fmt)[0]
 
-        self._output_file_path = vim.eval('expand("%:r")') + '.' + self.opts.get_output_formats_table()[no_extensions(output_format)]
+        self._output_file_path = vim.eval('expand("%:r")') + '.' \
+            + self.opts.get_output_formats_table()[no_ext(output_format)]
         output_arg = '-o "' + self._output_file_path + '"'
 
-        engine_arg = "--latex-engine=" + vim.vars["pandoc#command#latex_engine"] if output_format in ["pdf", "beamer"] else ""
+        try: # try a buffer local engine
+            engine_var = vim.current.buffer.vars['pandoc_command_latex_engine']
+        except:
+            engine_var = vim.vars['pandoc#command#latex_engine']
+        # vim's python3's .vars are bytes, unlike in neovim
+        if type(engine_var) == bytes:
+            engine_var = '"' + engine_var.decode() + '"'
+        engine_arg = "--latex-engine=" + str(engine_var) \
+            if output_format in ["pdf", "beamer"] \
+            else ""
 
         extra = []
         for opt in c_opts:
@@ -241,31 +267,50 @@ class PandocCommand(object):
                 extra.append(opt[0] + (eq or ' ') + '"' + val + '"')
             else:
                 extra.append(opt[0] + eq + opt[1])
+        if extra_mathjax:
+            extra.append('--mathjax')
 
         extra_args = " ".join(extra)
 
-        extra_input_args = '"' + '" "'.join(c_args) + '"' if len(c_args) > 0 else ""
+        extra_input_args = '"' + '" "'.join(c_args) + '"' if len(c_args) > 0 \
+                            else ""
 
         input_arg = '"' + vim.eval('expand("%")') + '"'
 
-        self._run_command = " ".join(filter(lambda i: i != "", ["pandoc", \
-                                                                bib_arg, \
-                                                                strict_arg, \
-                                                                output_format_arg, \
-                                                                engine_arg, \
-                                                                output_arg, \
-                                                                extra_args, \
-                                                                extra_input_args, \
-                                                                input_arg]))
+        arglist = ["pandoc", \
+                   bib_arg, \
+                   strict_arg, \
+                   output_format_arg, \
+                   engine_arg, \
+                   output_arg, \
+                   extra_args, \
+                   extra_input_args, \
+                   input_arg]
+
+        self._run_command = " ".join(filter(lambda i: len(i) > 0, arglist))
 
         # execute
         self.execute(should_open)
 
     def execute(self, should_open):
         with open("pandoc.out", 'w') as tmp:
-            if vim.eval("has('clientserver')") == '1' and \
-               vim.eval("v:servername") != "" and \
-               vim.eval("executable('python')") == '1':
+
+            # for nvim
+            if vim.eval("has('nvim')") == '1':
+                try:
+                    should_open_s = str(int(should_open))
+                except:
+                    should_open_s = '0'
+
+                vim.command("call jobstart(" + \
+                            "['"+ "','".join(shlex.split(self._run_command)) + "'], " + \
+                            " extend({'should_open': '" + should_open_s + "'}," +\
+                            " {'on_exit': 'pandoc#command#JobHandler'}))")
+
+            # for vim versions with clientserver support
+            elif vim.eval("has('clientserver')") == '1' and \
+                 vim.eval("v:servername") != "" and \
+                 vim.eval("executable('python')") == '1':
                 async_runner = '"' + os.path.join(os.path.dirname(__file__), "async.py") + '"'
                 servername_arg = "--servername=" + vim.eval("v:servername")
                 open_arg  = "--open" if should_open else "--noopen"
@@ -274,18 +319,9 @@ class PandocCommand(object):
                     Popen(shlex.split(async_command), stdout=tmp, stderr=tmp)
                 except:
                     vim.command('echoe "vim-pandoc: could not execute pandoc asynchronously"')
-            elif vim.eval("has('nvim')") == '1':
-                try:
-                    should_open_s = str(int(should_open))
-                except:
-                    should_open_s = '0'
-                vim.command("call jobstart("+ \
-                        str(['pandoc'] + shlex.split(self._run_command)[1:]) + \
-                                ", extend({'should_open': '" + should_open_s + \
-                                "'}, {'on_exit': 'pandoc#command#JobHandler'}))")
-                #vim.command('call jobstart(["pandoc", ' + str(shlex.split(self._run_command)[1:]) + '])')
+
             else:
-                try:
+                try: # fallback to synchronous execution
                     com = Popen(shlex.split(self._run_command), stdout=tmp, stderr=tmp)
                     com.wait()
                 except:
@@ -297,10 +333,11 @@ class PandocCommand(object):
     def on_done(self, should_open, returncode):
         if self._run_command and self._output_file_path:
             vim.command("echohl Statement")
-            vim.command("echom 'vim-pandoc:ran:" + self._run_command + "'")
+            vim.command("echom 'vim-pandoc:ran " + self._run_command + "'")
             vim.command("echohl None")
 
-            if vim.eval("g:pandoc#command#use_message_buffers") == '1' and returncode not in  ('0', 0):
+            if vim.eval("g:pandoc#command#use_message_buffers") == '1' \
+                    and returncode not in  ('0', 0):
                 vim.command("let split = &splitbelow")
                 vim.command("set splitbelow")
 
@@ -309,7 +346,7 @@ class PandocCommand(object):
                 vim.command("setlocal wrap")
                 vim.command("setlocal linebreak")
                 vim.current.buffer[0] = "# Press q to close this"
-                vim.current.buffer.append("▶ " + self._run_command)
+                vim.current.buffer.append("> " + self._run_command)
                 vim.command("normal! G")
                 if vim.eval('filereadable("pandoc.out")') == '1':
                     vim.command("silent r pandoc.out")
@@ -334,13 +371,15 @@ class PandocCommand(object):
                 os.remove("pandoc.out")
 
             # open file if needed
+
+            # nvim's python host doesn't change the directory the same way vim does
             if vim.eval('has("nvim")') == '1':
-                # nvim's python host doesn't change the directory the same way vim does
                 os.chdir(vim.eval('expand("%:p:h")'))
+
             if os.path.exists(os.path.abspath(self._output_file_path)) and should_open:
                 # if g:pandoc#command#custom_open is defined and is a valid funcref
                 if vim.eval("g:pandoc#command#custom_open") != "" \
-                        and vim.eval("exists('*"+vim.eval("g:pandoc#command#custom_open")+"')") == 1:
+                   and vim.eval("exists('*"+vim.eval("g:pandoc#command#custom_open")+"')") == 1:
 
                     custom_command = vim.eval(vim.eval("g:pandoc#command#custom_open") \
                                               + "('"+self._output_file_path+"')")
@@ -368,6 +407,5 @@ class PandocCommand(object):
                 vim.command("echohl Statement")
                 vim.command("echom 'vim-pandoc:ran successfully.'")
                 vim.command("echohl None")
-
 
 pandoc = PandocCommand()

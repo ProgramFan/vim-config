@@ -12,6 +12,11 @@ function! pandoc#command#Init()
     if !exists("g:pandoc#command#latex_engine")
         let g:pandoc#command#latex_engine = "xelatex"
     endif
+    if exists('b:pandoc_yaml_data')
+        if has_key(b:pandoc_yaml_data, 'latex_engine')
+            let b:pandoc_command_latex_engine = b:pandoc_yaml_data['latex_engine']
+        endif
+    endif
     " custom function defining command to open the created files {{{3
     if !exists("g:pandoc#command#custom_open")
         let g:pandoc#command#custom_open = ""
@@ -42,6 +47,9 @@ function! pandoc#command#Init()
         exe s:python ."import vim"
         command! -buffer -bang -nargs=? -complete=customlist,pandoc#command#PandocComplete
                     \ Pandoc call pandoc#command#Pandoc("<args>", "<bang>")
+    else
+        " simple version for systems without python
+        command! -buffer -nargs=? Pandoc call pandoc#command#PandocNative("<args>")
     endif "}}}2
     " create :PandocTemplate {{{2
     command! -buffer -nargs=1 -complete=custom,pandoc#command#PandocTemplateComplete
@@ -62,6 +70,15 @@ function! pandoc#command#Pandoc(args, bang)
         let templatized_args = substitute(a:args, '#\(\S\+\)',
                     \'\=pandoc#command#GetTemplate(submatch(1))', 'g')
         exe s:python ."pandoc(vim.eval('templatized_args'), vim.eval('a:bang') != '')"
+    endif
+endfunction
+
+function! pandoc#command#PandocNative(args)
+    let l:cmd = 'pandoc '.a:args. ' '.fnameescape(expand('%'))
+    if has('job')
+        call job_start(l:cmd)
+    else
+        call system(l:cmd)
     endif
 endfunction
 
@@ -102,7 +119,7 @@ function! pandoc#command#PandocAsyncCallback(should_open, returncode)
     exe s:python ."pandoc.on_done(vim.eval('a:should_open') == '1', vim.eval('a:returncode'))"
 endfunction
 
-function! pandoc#command#JobHandler(id, data, event)
+function! pandoc#command#JobHandler(id, data, event) dict
     exe s:python ."from vim_pandoc.command import pandoc"
     exe s:python ."pandoc.on_done(vim.eval('self.should_open') == '1', vim.eval('a:data'))"
 endfunction

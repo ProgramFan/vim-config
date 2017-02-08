@@ -1,9 +1,10 @@
 # vim-autoformat
 
-Format code with one button press!
-This plugin makes use of external formatprograms to achieve the best results.
-Check the list of formatprograms to see which languages are supported by default.
-You can easily customize or add your own formatprogram.
+Format code with one button press.
+
+This plugin makes use of external formatting programs to achieve the best results.
+Check the list of formatprograms below to see which languages are supported by default.
+You can easily customize these or add your own formatprogram.
 When no formatprogram exists (or no formatprogram is installed) for a certain filetype,
 vim-autoformat falls back by default to indenting, (using vim's auto indent functionality), retabbing and removing trailing whitespace.
 
@@ -133,7 +134,7 @@ Here is a list of formatprograms that are supported by default, and thus will be
   And here the link to its page on the python website: http://pypi.python.org/pypi/autopep8/0.5.2.
 
 * `yapf` for __Python__ (supports formatting ranges).
-  It is readily available through PIP. Most users can install with the terminal command `sudo pip install yapf` or `pip --user install yapf`.
+  It is readily available through PIP. Most users can install with the terminal command `sudo pip install yapf` or `pip  install --user yapf`.
   YAPF has one optional configuration variable to control the formatter style.
   For example:
 
@@ -191,6 +192,10 @@ Here is a list of formatprograms that are supported by default, and thus will be
   Here is the link to the repository: https://github.com/erniebrodeur/ruby-beautify.
   This beautifier developed and tested with ruby `2.0+`, so you can have weird results with earlier ruby versions.
 
+* `rubocop` for __Ruby__.
+  It can be installed by running `gem install rubocop`.
+  Here is the link to the repository: https://github.com/bbatsov/rubocop
+
 * `gofmt` for __Golang__.
   The default golang formatting program is shipped with the golang distribution. Make sure `gofmt` is in your PATH (if golang is installed properly, it should be).
   Here is the link to the installation: https://golang.org/doc/install
@@ -213,7 +218,7 @@ Here is a list of formatprograms that are supported by default, and thus will be
 * `fprettify` for modern __Fortran__.
   Download from [official repository](https://github.com/pseewald/fprettify). Install with `./setup.py install` or `./setup.py install --user`.
 
-## Debugging
+## It doesn't work!
 
 If you're struggling with getting a formatter to work, it may help to set vim-autoformat in
 verbose-mode. Vim-autoformat will then output errors on formatters that failed.
