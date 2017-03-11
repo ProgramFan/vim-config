@@ -28,26 +28,29 @@ let s:cursor_moved = 0
 let s:previous_allowed_buffer_number = 0
 
 
-function! s:UsingPython2()
-  " I'm willing to bet quite a bit that sooner or later, somebody will ask us to
-  " make it configurable which version of Python we use.
-  if has('python')
+" When both versions are available, we prefer Python 3 over Python 2:
+"  - faster startup (no monkey-patching from python-future);
+"  - better Windows support (e.g. temporary paths are not returned in all
+"    lowercase);
+"  - Python 2 support will eventually be dropped.
+function! s:UsingPython3()
+  if has('python3')
     return 1
   endif
   return 0
 endfunction
 
 
-let s:using_python2 = s:UsingPython2()
-let s:python_until_eof = s:using_python2 ? "python << EOF" : "python3 << EOF"
-let s:python_command = s:using_python2 ? "py " : "py3 "
+let s:using_python3 = s:UsingPython3()
+let s:python_until_eof = s:using_python3 ? "python3 << EOF" : "python << EOF"
+let s:python_command = s:using_python3 ? "py3 " : "py "
 
 
 function! s:Pyeval( eval_string )
-  if s:using_python2
-    return pyeval( a:eval_string )
+  if s:using_python3
+    return py3eval( a:eval_string )
   endif
-  return py3eval( a:eval_string )
+  return pyeval( a:eval_string )
 endfunction
 
 
@@ -82,7 +85,7 @@ function! youcompleteme#Enable()
     " Note that these events will NOT trigger for the file vim is started with;
     " so if you do "vim foo.cc", these events will not trigger when that buffer
     " is read. This is because youcompleteme#Enable() is called on VimEnter and
-    " that happens *after" BufRead/BufEnter has already triggered for the
+    " that happens *after* BufRead/FileType has already triggered for the
     " initial file.
     " We also need to trigger buf init code on the FileType event because when
     " the user does :enew and then :set ft=something, we need to run buf init
@@ -97,10 +100,15 @@ function! youcompleteme#Enable()
     autocmd CompleteDone * call s:OnCompleteDone()
   augroup END
 
-  " Calling this once solves the problem of BufRead/BufEnter not triggering for
-  " the first loaded file. This should be the last command executed in this
-  " function!
-  call s:OnBufferRead()
+  " BufRead/FileType events are not triggered for the first loaded file.
+  " However, we don't directly call the s:OnBufferRead function because it would
+  " send requests that can't succeed as the server is not ready yet and would
+  " slow down startup.
+  call s:DisableOnLargeFile( expand( '%' ) )
+
+  if s:AllowedToCompleteInCurrentBuffer()
+    call s:SetCompleteFunc()
+  endif
 endfunction
 
 
@@ -341,19 +349,6 @@ function! s:VisitedBufferRequiresReparse()
   endif
   let s:previous_allowed_buffer_number = bufnr( '' )
   return 1
-endfunction
-
-
-function! s:SetUpCommands()
-  command! YcmRestartServer call s:RestartServer()
-  command! YcmShowDetailedDiagnostic call s:ShowDetailedDiagnostic()
-  command! YcmDebugInfo call s:DebugInfo()
-  command! -nargs=* -complete=custom,youcompleteme#LogsComplete
-        \ YcmToggleLogs call s:ToggleLogs(<f-args>)
-  command! -nargs=* -complete=custom,youcompleteme#SubCommandsComplete
-        \ YcmCompleter call s:CompleterCommand(<f-args>)
-  command! YcmForceCompileAndDiagnostics call s:ForceCompileAndDiagnostics()
-  command! YcmDiags call s:ShowDiagnostics()
 endfunction
 
 
@@ -748,13 +743,21 @@ function! youcompleteme#ServerPid()
 endfunction
 
 
-function! s:RestartServer()
-  exec s:python_command "ycm_state.RestartServer()"
+function! s:SetUpCommands()
+  command! YcmRestartServer call s:RestartServer()
+  command! YcmDebugInfo call s:DebugInfo()
+  command! -nargs=* -complete=custom,youcompleteme#LogsComplete
+        \ YcmToggleLogs call s:ToggleLogs(<f-args>)
+  command! -nargs=* -complete=custom,youcompleteme#SubCommandsComplete
+        \ YcmCompleter call s:CompleterCommand(<f-args>)
+  command! YcmDiags call s:ShowDiagnostics()
+  command! YcmShowDetailedDiagnostic call s:ShowDetailedDiagnostic()
+  command! YcmForceCompileAndDiagnostics call s:ForceCompileAndDiagnostics()
 endfunction
 
 
-function! s:ShowDetailedDiagnostic()
-  exec s:python_command "ycm_state.ShowDetailedDiagnostic()"
+function! s:RestartServer()
+  exec s:python_command "ycm_state.RestartServer()"
 endfunction
 
 
@@ -769,6 +772,11 @@ endfunction
 
 function! s:ToggleLogs(...)
   exec s:python_command "ycm_state.ToggleLogs( *vim.eval( 'a:000' ) )"
+endfunction
+
+
+function! youcompleteme#LogsComplete( arglead, cmdline, cursorpos )
+  return join( s:Pyeval( 'list( ycm_state.GetLogfiles() )' ), "\n" )
 endfunction
 
 
@@ -795,6 +803,11 @@ function! s:CompleterCommand(...)
 endfunction
 
 
+function! youcompleteme#SubCommandsComplete( arglead, cmdline, cursorpos )
+  return join( s:Pyeval( 'ycm_state.GetDefinedSubcommands()' ), "\n" )
+endfunction
+
+
 function! youcompleteme#OpenGoToList()
   exec s:python_command "vimsupport.PostVimMessage(" .
         \ "'WARNING: youcompleteme#OpenGoToList function is deprecated. " .
@@ -803,53 +816,18 @@ function! youcompleteme#OpenGoToList()
 endfunction
 
 
-function! youcompleteme#LogsComplete( arglead, cmdline, cursorpos )
-  return join( s:Pyeval( 'list( ycm_state.GetLogfiles() )' ), "\n" )
+function! s:ShowDiagnostics()
+  exec s:python_command "ycm_state.ShowDiagnostics()"
 endfunction
 
 
-function! youcompleteme#SubCommandsComplete( arglead, cmdline, cursorpos )
-  return join( s:Pyeval( 'ycm_state.GetDefinedSubcommands()' ), "\n" )
-endfunction
-
-
-function! s:ForceCompile()
-  if !s:Pyeval( 'ycm_state.NativeFiletypeCompletionUsable()' )
-    echom "Native filetype completion not supported for current file, " .
-          \ "cannot force recompilation."
-    return 0
-  endif
-
-  echom "Forcing compilation, this will block Vim until done."
-  exec s:python_command "ycm_state.OnFileReadyToParse()"
-  exec s:python_command "ycm_state.HandleFileParseRequest( True )"
-
-  return 1
+function! s:ShowDetailedDiagnostic()
+  exec s:python_command "ycm_state.ShowDetailedDiagnostic()"
 endfunction
 
 
 function! s:ForceCompileAndDiagnostics()
-  let compilation_succeeded = s:ForceCompile()
-  if !compilation_succeeded
-    return
-  endif
-  echom "Diagnostics refreshed."
-endfunction
-
-
-function! s:ShowDiagnostics()
-  let compilation_succeeded = s:ForceCompile()
-  if !compilation_succeeded
-    return
-  endif
-
-  if s:Pyeval( 'ycm_state.PopulateLocationListWithLatestDiagnostics()' )
-    if g:ycm_open_loclist_on_ycm_diags
-      lopen
-    endif
-  else
-    echom "No warnings or errors detected"
-  endif
+  exec s:python_command "ycm_state.ForceCompileAndDiagnostics()"
 endfunction
 
 
