@@ -49,6 +49,8 @@ Plug 'joshdick/onedark.vim'
 
 " YouCompleteMe: A super fast and versatile completer
 Plug 'Valloric/YouCompleteMe'
+Plug 'rdnetto/YCM-Generator', { 'branch': 'stable'}
+Plug 'jeaye/color_coded'
 
 " Syntastic: A nice syntax checker and static analysis tool
 Plug 'scrooloose/syntastic'
