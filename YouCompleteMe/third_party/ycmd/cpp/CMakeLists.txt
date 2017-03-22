@@ -125,7 +125,7 @@ elseif( COMPILER_IS_CLANG )
     set( CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++" )
   endif()
 elseif( MSVC )
-  if ( NOT  MSVC_VERSION LESS 1700  )
+  if ( NOT  MSVC_VERSION LESS 1800  )
     set( CPP11_AVAILABLE true )
   endif()
 endif()
@@ -152,12 +152,12 @@ endif()
 # TODO: remove this when it's fixed upstream (probably boost 1.53).
 add_definitions( -DBOOST_THREAD_DONT_USE_CHRONO )
 
-if( MSVC OR CYGWIN )
+if( MSVC OR CYGWIN OR MSYS)
   # BOOST_ALL_NO_LIB turns off MSVC library autolinking
   add_definitions( -DBOOST_ALL_NO_LIB )
 endif()
 
-if( WIN32 OR CYGWIN )
+if( WIN32 OR CYGWIN OR MSYS)
   # BOOST_PYTHON_SOURCE makes boost use the correct __declspec
   add_definitions( -DBOOST_PYTHON_SOURCE -DBOOST_THREAD_USE_LIB )
   if ( NOT MSVC AND 64_BIT_PLATFORM )
@@ -169,9 +169,9 @@ endif()
 
 #############################################################################
 
-# When used with Clang, adding the -std=c++0x flag to CMAKE_CXX_FLAGS will cause
+# When used with Clang, adding the -std=c++11 flag to CMAKE_CXX_FLAGS will cause
 # the compiler to output a warning during linking:
-#  clang: warning: argument unused during compilation: '-std=c++0x'
+#  clang: warning: argument unused during compilation: '-std=c++11'
 # This is caused by cmake passing this flag to the linking stage which it
 # shouldn't do. It's ignored so it does no harm, but the warning is annoying.
 #
@@ -181,7 +181,7 @@ if ( CPP11_AVAILABLE )
   # Cygwin needs its hand held a bit; see issue #473
   if ( CYGWIN AND CMAKE_COMPILER_IS_GNUCXX )
     add_definitions( -std=gnu++11 )
-  else()
+  elseif( NOT MSVC )
     add_definitions( -std=c++11 )
   endif()
 else()
