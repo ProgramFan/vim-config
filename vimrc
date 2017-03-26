@@ -51,6 +51,7 @@ Plug 'joshdick/onedark.vim'
 Plug 'Valloric/YouCompleteMe'
 Plug 'rdnetto/YCM-Generator', { 'branch': 'stable'}
 Plug 'jeaye/color_coded'
+Plug 'lyuts/vim-rtags'
 
 " Syntastic: A nice syntax checker and static analysis tool
 Plug 'scrooloose/syntastic'
