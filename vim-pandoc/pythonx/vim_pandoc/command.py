@@ -271,10 +271,8 @@ class PandocCommand(object):
                 eq = "="
             # if it begins with ~, it will expand, otherwise, it will just copy
             val = os.path.expanduser(opt[1])
-            if os.path.isabs(val) and os.path.exists(val):
-                extra.append(opt[0] + (eq or ' ') + '"' + val + '"')
-            else:
-                extra.append(opt[0] + eq + opt[1])
+            extra.append(opt[0] + (eq or ' ')
+                + (('"' + val + '"') if len(val) else ''))
         if extra_mathjax:
             extra.append('--mathjax')
 
@@ -389,7 +387,7 @@ class PandocCommand(object):
             if os.path.exists(os.path.abspath(self._output_file_path)) and should_open:
                 # if g:pandoc#command#custom_open is defined and is a valid funcref
                 if vim.eval("g:pandoc#command#custom_open") != "" \
-                   and vim.eval("exists('*"+vim.eval("g:pandoc#command#custom_open")+"')") == 1:
+                   and vim.eval("exists('*"+vim.eval("g:pandoc#command#custom_open")+"')") == '1':
 
                     custom_command = vim.eval(vim.eval("g:pandoc#command#custom_open") \
                                               + "('"+self._output_file_path+"')")

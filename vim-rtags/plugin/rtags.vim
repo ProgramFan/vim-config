@@ -332,9 +332,7 @@ function! rtags#getCurrentLocation()
 endfunction
 
 function! rtags#SymbolInfoHandler(output)
-    for line in a:output
-        echo line
-    endfor
+    echo join(a:output, "\n")
 endfunction
 
 function! rtags#SymbolInfo()
@@ -452,26 +450,23 @@ endfunction
 
 function! rtags#JumpToParentHandler(results)
     let results = a:results
-    let parentSeparator = "===================="
-    let parentSeparatorPassed = 0
     for line in results
-        if line == parentSeparator
-            let parentSeparatorPassed = 1
+        let matched = matchend(line, "^Parent: ")
+        if matched == -1
+            continue
         endif
-        if parentSeparatorPassed == 1
-            let [jump_file, lnum, col] = rtags#parseSourceLocation(line)
-            if !empty(jump_file)
-                if a:0 > 0
-                    call rtags#cloneCurrentBuffer(a:1)
-                endif
-
-                " Add location to the jumplist
-                normal m'
-                if rtags#jumpToLocation(jump_file, lnum, col)
-                    normal zz
-                endif
-                return
+        let [jump_file, lnum, col] = rtags#parseSourceLocation(line[matched:-1])
+        if !empty(jump_file)
+            if a:0 > 0
+                call rtags#cloneCurrentBuffer(a:1)
             endif
+
+            " Add location to the jumplist
+            normal m'
+            if rtags#jumpToLocation(jump_file, lnum, col)
+                normal zz
+            endif
+            return
         endif
     endfor
 endfunction
@@ -570,8 +565,9 @@ function! rtags#ExecuteRCAsync(args, handlers)
                 \ 'on_exit' : function('rtags#HandleResults')
                 \ }
 
-    let s:job_die = s:job_cid + 1
-    let cmd = cmd . '&> ' . rtags#TempFile(s:job_cid)
+    let s:job_cid = s:job_cid + 1
+    " should have out+err redirection portable for various shells.
+    let cmd = cmd . '>& ' . rtags#TempFile(s:job_cid)
     let job = jobstart(cmd, s:callbacks)
     let s:jobs[job] = s:job_cid
     let s:result_handlers[job] = a:handlers
@@ -584,7 +580,7 @@ function! rtags#HandleResults(job_id, data, event)
     let output = readfile(temp_file)
     let handlers = remove(s:result_handlers, a:job_id)
     call rtags#ExecuteHandlers(output, handlers)
-    execute 'silent !rm ' . temp_file
+    execute 'silent !rm -f ' . temp_file
 endfunction
 
 function! rtags#ExecuteHandlers(output, handlers)

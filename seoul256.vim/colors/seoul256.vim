@@ -8,11 +8,9 @@
 " File:         seoul256.vim
 " URL:          github.com/junegunn/seoul256.vim
 " Author:       Junegunn Choi (junegunn.c@gmail.com)
-" Version:      1.5.3
-" Last Updated: Aug 4, 2014
 " License:      MIT
 "
-" Copyright (c) 2013 Junegunn Choi
+" Copyright (c) 2017 Junegunn Choi
 "
 " MIT License
 "
@@ -297,7 +295,7 @@ call s:hi('MatchParen', ['', ''], [s:dark_bg + 3, s:light_bg - 3])
 call s:hi('ModeMsg', [173, 173], ['', ''])
 
 " let &showbreak = '> '
-call s:hi('NonText', [101, 101], ['', ''])
+call s:hi('NonText', [59, 145], ['', ''])
 
 call s:hi('MoreMsg', [173, 173], ['', ''])
 
@@ -389,8 +387,20 @@ call s:hi('IndentGuidesEven', ['', ''], [s:dark_bg + 1, s:light_bg - 1])
 " -------------
 call s:hi('GitGutterAdd', [108, 65], [s:dark_bg + 1, s:light_bg - 2])
 call s:hi('GitGutterChange', [68, 68], [s:dark_bg + 1, s:light_bg - 2])
-call s:hi('GitGutterDelete', [161, 161], [s:dark_bg + 1, s:light_bg -2 ])
+call s:hi('GitGutterDelete', [161, 161], [s:dark_bg + 1, s:light_bg - 2])
 call s:hi('GitGutterChangeDelete', [168, 168], [s:dark_bg + 1, s:light_bg - 2])
+
+" ale
+" ---
+call s:hi('ALEErrorSign', [161, 161], [s:dark_bg, s:light_bg])
+call s:hi('ALEWarningSign', [174, 131], [s:dark_bg, s:light_bg])
+
+" vim-signify
+" -----------
+call s:hi('SignifySignAdd', [108, 65], [s:dark_bg + 1, s:light_bg - 2])
+call s:hi('SignifySignChange', [68, 68], [s:dark_bg + 1, s:light_bg - 2])
+call s:hi('SignifySignDelete', [161, 161], [s:dark_bg + 1, s:light_bg - 2])
+
 
 " http://vim.wikia.com/wiki/Highlight_unwanted_spaces     
 " ---------------------------------------------------^^^^^

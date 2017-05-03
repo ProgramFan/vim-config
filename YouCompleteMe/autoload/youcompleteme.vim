@@ -101,11 +101,9 @@ function! youcompleteme#Enable()
   augroup END
 
   " BufRead/FileType events are not triggered for the first loaded file.
-  " However, we don't directly call the s:OnBufferRead function because it would
-  " send requests that can't succeed as the server is not ready yet and would
-  " slow down startup.
-  call s:DisableOnLargeFile( expand( '%' ) )
-
+  " However, we don't directly call the s:OnBufferRead function because it
+  " would send requests that can't succeed as the server is not ready yet and
+  " would slow down startup.
   if s:AllowedToCompleteInCurrentBuffer()
     call s:SetCompleteFunc()
   endif
@@ -313,6 +311,23 @@ function! s:TurnOffSyntasticForCFamily()
 endfunction
 
 
+function! s:DisableOnLargeFile( buffer )
+  if exists( 'b:ycm_largefile' )
+    return b:ycm_largefile
+  endif
+
+  let threshold = g:ycm_disable_for_files_larger_than_kb * 1024
+  let b:ycm_largefile =
+        \ threshold > 0 && getfsize( expand( a:buffer ) ) > threshold
+  if b:ycm_largefile
+    exec s:python_command "vimsupport.PostVimMessage(" .
+          \ "'YouCompleteMe is disabled in this buffer; " .
+          \ "the file exceeded the max size (see YCM options).' )"
+  endif
+  return b:ycm_largefile
+endfunction
+
+
 function! s:AllowedToCompleteInBuffer( buffer )
   let buffer_filetype = getbufvar( a:buffer, '&filetype' )
 
@@ -322,7 +337,7 @@ function! s:AllowedToCompleteInBuffer( buffer )
     return 0
   endif
 
-  if exists( 'b:ycm_largefile' )
+  if s:DisableOnLargeFile( a:buffer )
     return 0
   endif
 
@@ -389,34 +404,6 @@ function! s:SetUpCompleteopt()
 endfunction
 
 
-" For various functions/use-cases, we want to keep track of whether the buffer
-" has changed since the last time they were invoked. We keep the state of
-" b:changedtick of the last time the specific function was called in
-" b:ycm_changedtick.
-function! s:SetUpYcmChangedTick()
-  let b:ycm_changedtick  =
-        \ get( b:, 'ycm_changedtick', {
-        \   'file_ready_to_parse' : -1,
-        \ } )
-endfunction
-
-
-function! s:DisableOnLargeFile( filename )
-  if exists( 'b:ycm_largefile' )
-    return
-  endif
-
-  let threshold = g:ycm_disable_for_files_larger_than_kb * 1024
-
-  if threshold > 0 && getfsize( a:filename ) > threshold
-    exec s:python_command "vimsupport.PostVimMessage(" .
-          \ "'YouCompleteMe is disabled in this buffer; " .
-          \ "the file exceeded the max size (see YCM options).' )"
-    let b:ycm_largefile = 1
-  endif
-endfunction
-
-
 function! s:OnVimLeave()
   exec s:python_command "ycm_state.OnVimLeave()"
 endfunction
@@ -428,13 +415,6 @@ endfunction
 
 
 function! s:OnBufferRead()
-  " We need to do this even when we are not allowed to complete in the current
-  " buffer because we might be allowed to complete in the future! The canonical
-  " example is creating a new buffer with :enew and then setting a filetype.
-  call s:SetUpYcmChangedTick()
-
-  call s:DisableOnLargeFile( expand( '<afile>:p' ) )
-
   if !s:AllowedToCompleteInCurrentBuffer()
     return
   endif
@@ -444,7 +424,7 @@ function! s:OnBufferRead()
   call s:SetOmnicompleteFunc()
 
   exec s:python_command "ycm_state.OnBufferVisit()"
-  call s:OnFileReadyToParse()
+  call s:OnFileReadyToParse( 1 )
 endfunction
 
 
@@ -453,8 +433,14 @@ function! s:OnBufferEnter()
     return
   endif
 
+  call s:SetUpCompleteopt()
+  call s:SetCompleteFunc()
+  call s:SetOmnicompleteFunc()
+
   exec s:python_command "ycm_state.OnBufferVisit()"
-  call s:OnFileReadyToParse()
+  " Last parse may be outdated because of changes from other buffers. Force a
+  " new parse.
+  call s:OnFileReadyToParse( 1 )
 endfunction
 
 
@@ -481,7 +467,12 @@ function! s:OnCursorHold()
 endfunction
 
 
-function! s:OnFileReadyToParse()
+function! s:OnFileReadyToParse( ... )
+  " Accepts an optional parameter that is either 0 or 1. If 1, send a
+  " FileReadyToParse event notification, whether the buffer has changed or not;
+  " effectively forcing a parse of the buffer. Default is 0.
+  let force_parsing = a:0 > 0 && a:1
+
   if s:Pyeval( 'ycm_state.ServerBecomesReady()' )
     " Server was not ready until now and could not parse previous requests for
     " the current buffer. We need to send them again.
@@ -495,21 +486,18 @@ function! s:OnFileReadyToParse()
     return
   endif
 
-  " We need to call this just in case there is no b:ycm_changetick; this can
-  " happen for special buffers.
-  call s:SetUpYcmChangedTick()
-
   " Order is important here; we need to extract any information before
   " reparsing the file again. If we sent the new parse request first, then
   " the response would always be pending when we called
   " HandleFileParseRequest.
   exec s:python_command "ycm_state.HandleFileParseRequest()"
 
-  let buffer_changed = b:changedtick != b:ycm_changedtick.file_ready_to_parse
-  if buffer_changed
+  " We only want to send a new FileReadyToParse event notification if the buffer
+  " has changed since the last time we sent one, or if forced.
+  if force_parsing || b:changedtick != get( b:, 'ycm_changedtick', -1 )
     exec s:python_command "ycm_state.OnFileReadyToParse()"
+    let b:ycm_changedtick = b:changedtick
   endif
-  let b:ycm_changedtick.file_ready_to_parse = b:changedtick
 endfunction
 
 
