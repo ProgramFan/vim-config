@@ -298,6 +298,9 @@ endfunction
 function! s:repo_tree(...) dict abort
   if self.dir() =~# '/\.git$'
     let dir = self.dir()[0:-6]
+    if dir !~# '/'
+      let dir .= '/'
+    endif
   else
     let dir = s:configured_tree(self.git_dir)
   endif
@@ -1118,7 +1121,7 @@ function! s:Commit(args, ...) abort
       elseif error ==# '!'
         return s:Status()
       else
-        call s:throw(error)
+        call s:throw(empty(error)?join(errors, ' '):error)
       endif
     endif
   catch /^fugitive:/
