@@ -115,17 +115,17 @@ endif()
 # Determining the presence of C++11 support in the compiler
 set( CPP11_AVAILABLE false )
 if ( CMAKE_COMPILER_IS_GNUCXX )
-  if ( NOT  CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.6  )
+  if ( NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9 )
     set( CPP11_AVAILABLE true )
   endif()
 elseif( COMPILER_IS_CLANG )
-  if ( NOT  CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3  )
+  if ( NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3 )
     set( CPP11_AVAILABLE true )
     set( CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11" )
     set( CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++" )
   endif()
 elseif( MSVC )
-  if ( NOT  MSVC_VERSION LESS 1800  )
+  if ( NOT MSVC_VERSION LESS 1800 )
     set( CPP11_AVAILABLE true )
   endif()
 endif()
@@ -143,14 +143,6 @@ if ( MINGW )
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -include cmath")
 endif()
 
-# Due to a bug/misconfiguration/stupidity, boost 1.52 and libc++ don't like each
-# other much: a compilation error "Constexpr function never produces a constant
-# expression" pops up when trying to compile anything that uses
-# boost/chrono/duration.hpp (namely boost/thread for us). This is a workaround
-# that prevents this from happening. Also present in cpp/BoostParts/CMakeLists.txt.
-# See here for more details: https://svn.boost.org/trac/boost/ticket/7671
-# TODO: remove this when it's fixed upstream (probably boost 1.53).
-add_definitions( -DBOOST_THREAD_DONT_USE_CHRONO )
 
 if( MSVC OR CYGWIN OR MSYS)
   # BOOST_ALL_NO_LIB turns off MSVC library autolinking
@@ -185,7 +177,7 @@ if ( CPP11_AVAILABLE )
     add_definitions( -std=c++11 )
   endif()
 else()
-  message( FATAL_ERROR "Your C++ compiler does NOT support C++11." )
+  message( FATAL_ERROR "Your C++ compiler does NOT fully support C++11." )
 endif()
 
 # Note: build.py always explicitly sets this option, so the default used here

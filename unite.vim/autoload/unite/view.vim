@@ -226,14 +226,6 @@ function! unite#view#_redraw(is_force, winnr, is_gather_all) abort "{{{
     endif
   endtry
 
-  if context.immediately && len(unite.current_candidates) == 1
-    " Immediately action.
-    call unite#action#do(
-          \ context.default_action, [unite.current_candidates[0]])
-
-    " Note: It is workaround
-    stopinsert
-  endif
   if context.auto_preview
     call unite#view#_do_auto_preview()
   endif
@@ -409,12 +401,12 @@ function! unite#view#_resize_window() abort "{{{
     let context.unite__is_resize = winheight != winheight(0)
   elseif context.vertical
         \ && context.unite__old_winwidth == 0
-    execute 'vertical resize' context.winwidth
+    silent! execute 'vertical resize' context.winwidth
 
     let context.unite__is_resize = 1
   elseif !context.vertical
         \ && (context.unite__old_winheight == 0 || context.auto_preview)
-    execute 'resize' context.winheight
+    silent! execute 'resize' context.winheight
 
     let context.unite__is_resize = 1
   else

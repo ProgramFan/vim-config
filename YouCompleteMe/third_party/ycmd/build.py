@@ -147,13 +147,18 @@ def CheckCall( args, **kwargs ):
 
 
 def GetPossiblePythonLibraryDirectories():
-  library_dir = p.dirname( sysconfig.get_python_lib( standard_lib = True ) )
+  prefix = sys.base_prefix if PY_MAJOR >= 3 else sys.prefix
+
   if OnWindows():
-    return [ p.join( library_dir, 'libs' ) ]
-  # On pyenv, there is no Python dynamic library in the directory returned by
-  # the LIBPL variable. Such library is located in the parent folder of the
-  # standard Python library modules.
-  return [ sysconfig.get_config_var( 'LIBPL' ), library_dir ]
+    return [ p.join( prefix, 'libs' ) ]
+  # On pyenv and some distributions, there is no Python dynamic library in the
+  # directory returned by the LIBPL variable. Such library can be found in the
+  # "lib" or "lib64" folder of the base Python installation.
+  return [
+    sysconfig.get_config_var( 'LIBPL' ),
+    p.join( prefix, 'lib64' ),
+    p.join( prefix, 'lib' )
+  ]
 
 
 def FindPythonLibraries():
@@ -187,6 +192,9 @@ def FindPythonLibraries():
   static_libraries = []
 
   for library_dir in library_dirs:
+    if not p.exists( library_dir ):
+      continue
+
     # Files are sorted so that we found the non-versioned Python library before
     # the versioned one.
     for filename in sorted( os.listdir( library_dir ) ):
@@ -412,7 +420,8 @@ def BuildOmniSharp():
     sys.exit( 'ERROR: msbuild or xbuild is required to build Omnisharp.' )
 
   os.chdir( p.join( DIR_OF_THIS_SCRIPT, 'third_party', 'OmniSharpServer' ) )
-  CheckCall( [ build_command, '/property:Configuration=Release' ] )
+  CheckCall( [ build_command, '/property:Configuration=Release',
+                              '/property:TargetFrameworkVersion=v4.5' ] )
 
 
 def BuildGoCode():
@@ -422,7 +431,7 @@ def BuildGoCode():
   os.chdir( p.join( DIR_OF_THIS_SCRIPT, 'third_party', 'gocode' ) )
   CheckCall( [ 'go', 'build' ] )
   os.chdir( p.join( DIR_OF_THIS_SCRIPT, 'third_party', 'godef' ) )
-  CheckCall( [ 'go', 'build' ] )
+  CheckCall( [ 'go', 'build', 'godef.go' ] )
 
 
 def BuildRacerd():
