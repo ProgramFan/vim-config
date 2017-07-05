@@ -1,0 +1,14 @@
+<Plug>(textobj-continuous-cpp-a)	textobj-continuous-line.txt	/*<Plug>(textobj-continuous-cpp-a)*
+<Plug>(textobj-continuous-cpp-i)	textobj-continuous-line.txt	/*<Plug>(textobj-continuous-cpp-i)*
+<Plug>(textobj-continuous-vim-a)	textobj-continuous-line.txt	/*<Plug>(textobj-continuous-vim-a)*
+<Plug>(textobj-continuous-vim-i)	textobj-continuous-line.txt	/*<Plug>(textobj-continuous-vim-i)*
+g:textobj_continuous_line_no_default_key_mappings	textobj-continuous-line.txt	/*g:textobj_continuous_line_no_default_key_mappings*
+textobj-continuous-line	textobj-continuous-line.txt	/*textobj-continuous-line*
+textobj-continuous-line-contents	textobj-continuous-line.txt	/*textobj-continuous-line-contents*
+textobj-continuous-line-introduction	textobj-continuous-line.txt	/*textobj-continuous-line-introduction*
+textobj-continuous-line-key-mappings	textobj-continuous-line.txt	/*textobj-continuous-line-key-mappings*
+textobj-continuous-line-license	textobj-continuous-line.txt	/*textobj-continuous-line-license*
+textobj-continuous-line-others-key-mappings	textobj-continuous-line.txt	/*textobj-continuous-line-others-key-mappings*
+textobj-continuous-line-requirements	textobj-continuous-line.txt	/*textobj-continuous-line-requirements*
+textobj-continuous-line-vim-key-mappings	textobj-continuous-line.txt	/*textobj-continuous-line-vim-key-mappings*
+textobj-continuous-line.txt	textobj-continuous-line.txt	/*textobj-continuous-line.txt*

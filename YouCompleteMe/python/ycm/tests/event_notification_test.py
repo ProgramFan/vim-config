@@ -86,15 +86,15 @@ def MockEventNotification( response_method, native_filetype_completer = True ):
               'PostDataToHandlerAsync',
               return_value = MagicMock( return_value=True ) ):
 
-    # We set up a fake a Response (as called by EventNotification.Response)
-    # which calls the supplied callback method. Generally this callback just
-    # raises an apropriate exception, otherwise it would have to return a mock
-    # future object.
+    # We set up a fake response (as called by EventNotification.Response) which
+    # calls the supplied callback method. Generally this callback just raises an
+    # apropriate exception, otherwise it would have to return a mock future
+    # object.
     #
     # Note: JsonFromFuture is actually part of ycm.client.base_request, but we
-    # must patch where an object is looked up, not where it is defined.
-    # See https://docs.python.org/dev/library/unittest.mock.html#where-to-patch
-    # for details.
+    # must patch where an object is looked up, not where it is defined.  See
+    # https://docs.python.org/dev/library/unittest.mock.html#where-to-patch for
+    # details.
     with patch( 'ycm.client.event_notification.JsonFromFuture',
                 side_effect = response_method ):
 
@@ -105,10 +105,7 @@ def MockEventNotification( response_method, native_filetype_completer = True ):
         'ycm.youcompleteme.YouCompleteMe.FiletypeCompleterExistsForFiletype',
         return_value = native_filetype_completer ):
 
-        with patch( 'ycm.youcompleteme.YouCompleteMe.IsServerReady',
-                    return_value = True ):
-
-          yield
+        yield
 
 
 @patch( 'ycm.vimsupport.PostVimMessage', new_callable = ExtendedMock )
@@ -352,8 +349,6 @@ def _Check_FileReadyToParse_Diagnostic_Clean( ycm, vim_command ):
 
 
 @patch( 'ycm.youcompleteme.YouCompleteMe._AddUltiSnipsDataIfNeeded' )
-@patch( 'ycm.youcompleteme.YouCompleteMe.IsServerReady',
-        return_value = True )
 @YouCompleteMeInstance( { 'collect_identifiers_from_tags_files': 1 } )
 def EventNotification_FileReadyToParse_TagFiles_UnicodeWorkingDirectory_test(
     ycm, *args ):
@@ -498,8 +493,6 @@ def EventNotification_BufferUnload_BuildRequestForDeletedAndUnsavedBuffers_test(
 
 @patch( 'ycm.syntax_parse.SyntaxKeywordsForCurrentBuffer',
         return_value = [ 'foo', 'bar' ] )
-@patch( 'ycm.youcompleteme.YouCompleteMe.IsServerReady',
-        return_value = True )
 @YouCompleteMeInstance( { 'seed_identifiers_with_syntax': 1 } )
 def EventNotification_FileReadyToParse_SyntaxKeywords_SeedWithCache_test(
     ycm, *args ):
@@ -534,8 +527,6 @@ def EventNotification_FileReadyToParse_SyntaxKeywords_SeedWithCache_test(
 
 @patch( 'ycm.syntax_parse.SyntaxKeywordsForCurrentBuffer',
         return_value = [ 'foo', 'bar' ] )
-@patch( 'ycm.youcompleteme.YouCompleteMe.IsServerReady',
-        return_value = True )
 @YouCompleteMeInstance( { 'seed_identifiers_with_syntax': 1 } )
 def EventNotification_FileReadyToParse_SyntaxKeywords_ClearCacheIfRestart_test(
     ycm, *args ):

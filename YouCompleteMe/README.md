@@ -361,6 +361,14 @@ Vim. Look at the features included: `+python/dyn` for Python 2 and
 using a 64-bit client. [Daily updated copies of 32-bit and 64-bit Vim with
 Python 2 and Python 3 support][vim-win-download] are available.
 
+Add the line:
+
+    set encoding=utf-8
+
+to your [vimrc][] if not already present. This option is required by YCM. Note
+that it does not prevent you from editing a file in another encoding than UTF-8.
+You can do that by specifying [the `++enc` argument][++enc] to the `:e` command.
+
 Install YouCompleteMe with [Vundle][].
 
 **Remember:** YCM is a plugin with a compiled component. If you **update** YCM
@@ -516,7 +524,7 @@ process.
     it should say `Vi IMproved X.Y`, where X.Y is the major version of vim. If
     your version is greater than 7.4, then you're all set. If your version is
     7.4 then look below that where it says, `Included patches: 1-Z`, where Z
-    will be some number. That number needs to be 143 or higher.
+    will be some number. That number needs to be 1578 or higher.
 
     If your version of Vim is not recent enough, you may need to [compile Vim
     from source][vim-build] (don't worry, it's easy).
@@ -2305,6 +2313,19 @@ Default: `['<S-TAB>', '<Up>']`
 let g:ycm_key_list_previous_completion = ['<S-TAB>', '<Up>']
 ```
 
+### The `g:ycm_key_list_stop_completion` option
+
+This option controls the key mappings used to close the completion menu. This is
+useful when the menu is blocking the view, when you need to insert the `<TAB>`
+character, or when you want to expand a snippet from [UltiSnips][] and navigate
+through it.
+
+Default: `['<C-y>']`
+
+```viml
+let g:ycm_key_list_stop_completion = ['<C-y>']
+```
+
 ### The `g:ycm_key_invoke_completion` option
 
 This option controls the key mapping used to invoke the completion menu for
@@ -3095,3 +3116,4 @@ This software is licensed under the [GPL v3 license][gpl].
 [gitter]: https://gitter.im/Valloric/YouCompleteMe
 [ninja-compdb]: https://ninja-build.org/manual.html
 [vim-nerdtree-tabs]: https://github.com/jistr/vim-nerdtree-tabs
+[++enc]: http://vimdoc.sourceforge.net/htmldoc/editing.html#++enc
