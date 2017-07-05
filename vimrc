@@ -18,6 +18,14 @@ Plug 'tpope/vim-jdaddy'
 Plug 'majutsushi/tagbar'
 Plug 'Raimondi/delimitMate'
 
+" More text objects
+Plug 'kana/vim-textobj-user'
+Plug 'kana/vim-textobj-function'
+Plug 'glts/vim-textobj-comments'
+Plug 'rhysd/vim-textobj-continuous-line'
+Plug 'adriaanzon/vim-textobj-matchit'
+
+
 " Markdown: markdown writing environment with pandoc
 Plug 'junegunn/vim-easy-align'
 Plug 'vim-pandoc/vim-pandoc-syntax'
