@@ -21,7 +21,7 @@ Plug 'Raimondi/delimitMate'
 " More text objects
 Plug 'kana/vim-textobj-user'
 Plug 'kana/vim-textobj-function'
-Plug 'glts/vim-textobj-comments'
+Plug 'glts/vim-textobj-comment'
 Plug 'rhysd/vim-textobj-continuous-line'
 Plug 'adriaanzon/vim-textobj-matchit'
 
