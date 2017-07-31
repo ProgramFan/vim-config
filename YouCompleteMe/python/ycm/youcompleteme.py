@@ -365,8 +365,6 @@ class YouCompleteMe( object ):
     if not self.IsServerReady():
       return
 
-    self._omnicomp.OnFileReadyToParse( None )
-
     extra_data = {}
     self._AddTagsFilesIfNeeded( extra_data )
     self._AddSyntaxDataIfNeeded( extra_data )
@@ -376,7 +374,9 @@ class YouCompleteMe( object ):
 
 
   def OnBufferUnload( self, deleted_buffer_file ):
-    SendEventNotificationAsync( 'BufferUnload', filepath = deleted_buffer_file )
+    SendEventNotificationAsync(
+        'BufferUnload',
+        filepath = utils.ToUnicode( deleted_buffer_file ) )
 
 
   def OnBufferVisit( self ):
