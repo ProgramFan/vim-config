@@ -61,8 +61,7 @@ Plug 'rdnetto/YCM-Generator', { 'branch': 'stable'}
 Plug 'jeaye/color_coded'
 Plug 'lyuts/vim-rtags'
 
-" Syntastic: A nice syntax checker and static analysis tool
-Plug 'scrooloose/syntastic'
+Plug 'w0rp/ale' " yet another linter, but asynchronous
 Plug 'vim-scripts/DoxygenToolkit.vim', { 'for': ['c', 'cpp'] }
 Plug 'klen/python-mode', { 'for': 'python' }
 Plug 'SirVer/ultisnips'
