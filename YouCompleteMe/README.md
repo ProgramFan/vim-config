@@ -942,7 +942,7 @@ necessary for your project. That should be enough for 99% of projects.
 You could also consider using [YCM-Generator][ygen] to generate the
 `ycm_extra_conf.py` file.
 
-#### Errors during compilaton
+#### Errors during compilation
 
 If Clang encounters errors when compiling the header files that your file
 includes, then it's probably going to take a long time to get completions.  When
@@ -1406,20 +1406,6 @@ For example:
 
 Invoking this command on `s` returns `std::string => std::basic_string<char>`
 
-**NOTE:** Due to limitations of `libclang`, invoking this command on the word
-`auto` typically returns `auto`. However, invoking it on a usage of the variable
-with inferred type returns the correct type, but typically it is repeated due to
-`libclang` returning that the types differ.
-
-For example:
-
-```c++
-const char *s = "String";
-auto x = &s; // invoking on x or auto returns "auto";
-             // invoking on s returns "const char *"
-std::cout << *x; // invoking on x returns "const char ** => const char **"
-```
-
 **NOTE:** Causes re-parsing of the current translation unit.
 
 Supported in filetypes: `c, cpp, objc, objcpp, javascript, typescript`
@@ -1526,15 +1512,6 @@ for any diagnostics with available fix-its (where the completer can provide this
 indication).
 
 **NOTE:** Causes re-parsing of the current translation unit.
-
-**NOTE:** After applying a fix-it, the diagnostics UI is not immediately
-updated.  This is due to a technical restriction in Vim. Moving the cursor, or
-issuing the `:YcmForceCompileAndDiagnostics` command will refresh the
-diagnostics.  Repeated invocations of the `FixIt` command on a given line,
-however, _do_ apply all diagnostics as expected without requiring refreshing of
-the diagnostics UI.  This is particularly useful where there are multiple
-diagnostics on one line, or where after fixing one diagnostic, another fix-it is
-available.
 
 Supported in filetypes: `c, cpp, objc, objcpp, cs`
 
@@ -1658,8 +1635,8 @@ Autocommands
 
 This `User` autocommand is fired when YCM opens the location list window in
 response to the `YcmDiags` command. By default, the location list window is
-opened to full width at the bottom of the screen and its height is set to fit
-all entries. This behavior can be overridden by using the `YcmLocationOpened`
+opened to the bottom of the current window and its height is set to fit all
+entries. This behavior can be overridden by using the `YcmLocationOpened`
 autocommand which is triggered while the cursor is in the location list window.
 For instance:
 ```viml
@@ -1740,6 +1717,43 @@ Default: `0`
 
 ```viml
 let g:ycm_min_num_identifier_candidate_chars = 0
+```
+
+### The `g:ycm_max_num_candidates` option
+
+This option controls the maximum number of semantic completion suggestions shown
+in the completion menu. This only applies to suggestions from semantic
+completion engines; see [the `g:ycm_max_identifier_candidates`
+option](#the-gycm_max_num_identifier_candidates-option) to limit the number of
+suggestions from the identifier-based engine.
+
+A special value of `0` means there is no limit.
+
+**NOTE:** Setting this option to `0` or to a value greater than `100` is not
+recommended as it will slow down completion when there are a very large number
+of suggestions.
+
+Default: `50`
+
+```viml
+let g:ycm_max_num_candidates = 50
+```
+
+### The `g:ycm_max_num_identifier_candidates` option
+
+This option controls the maximum number of completion suggestions from the
+identifier-based engine shown in the completion menu.
+
+A special value of `0` means there is no limit.
+
+**NOTE:** Setting this option to `0` or to a value greater than `100` is not
+recommended as it will slow down completion when there are a very large number
+of suggestions.
+
+Default: `10`
+
+```viml
+let g:ycm_max_num_identifier_candidates = 10
 ```
 
 ### The `g:ycm_auto_trigger` option
@@ -3064,7 +3078,7 @@ This software is licensed under the [GPL v3 license][gpl].
 [vim]: http://www.vim.org/
 [syntastic]: https://github.com/scrooloose/syntastic
 [lightline]: https://github.com/itchyny/lightline.vim
-[flags_example]: https://raw.githubusercontent.com/Valloric/ycmd/6463774035e61a660ad9150a592b8829eb37fd10/cpp/ycm/.ycm_extra_conf.py
+[flags_example]: https://raw.githubusercontent.com/Valloric/ycmd/3ad0300e94edc13799e8bf7b831de8b57153c5aa/cpp/ycm/.ycm_extra_conf.py
 [compdb]: http://clang.llvm.org/docs/JSONCompilationDatabase.html
 [subsequence]: https://en.wikipedia.org/wiki/Subsequence
 [listtoggle]: https://github.com/Valloric/ListToggle
