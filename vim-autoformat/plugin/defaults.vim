@@ -181,10 +181,13 @@ if !exists('g:formatdef_eslint_local')
         let l:path = fnamemodify(expand('%'), ':p')
         let verbose = &verbose || g:autoformat_verbosemode == 1
         if has('win32')
-            return "(>&2 echo 'ESLint Local not supported on win32')"
+            return "(>&2 echo 'ESLint not supported on win32')"
         endif
         " find formatter & config file
         let l:prog = findfile('node_modules/.bin/eslint', l:path.";")
+        if empty(l:prog)
+            let l:prog = findfile('~/.npm-global/bin/eslint')
+        endif
         let l:cfg = findfile('.eslintrc.js', l:path.";")
         if empty(l:cfg)
             let l:cfg = findfile('.eslintrc.yaml', l:path.";")
@@ -198,9 +201,24 @@ if !exists('g:formatdef_eslint_local')
         if empty(l:cfg)
             let l:cfg = findfile('.eslintrc', l:path.";")
         endif
+        if empty(l:cfg)
+            let l:cfg = findfile('~/.eslintrc.js')
+        endif
+        if empty(l:cfg)
+            let l:cfg = findfile('~/.eslintrc.yaml')
+        endif
+        if empty(l:cfg)
+            let l:cfg = findfile('~/.eslintrc.yml')
+        endif
+        if empty(l:cfg)
+            let l:cfg = findfile('~/.eslintrc.json')
+        endif
+        if empty(l:cfg)
+            let l:cfg = findfile('~/.eslintrc')
+        endif
         if (empty(l:cfg) || empty(l:prog))
             if verbose
-                return "(>&2 echo 'No local ESLint program and/or config found')"
+                return "(>&2 echo 'No local or global ESLint program and/or config found')"
             endif
             return
         endif
