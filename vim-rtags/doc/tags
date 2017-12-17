@@ -9,6 +9,7 @@ g:rtagsUseDefaultMappings	rtags.txt	/*g:rtagsUseDefaultMappings*
 g:rtagsUseLocationList	rtags.txt	/*g:rtagsUseLocationList*
 rtags-FindRefs	rtags.txt	/*rtags-FindRefs*
 rtags-FindRefsByName	rtags.txt	/*rtags-FindRefsByName*
+rtags-FindRefsCallTree	rtags.txt	/*rtags-FindRefsCallTree*
 rtags-FindSubClasses	rtags.txt	/*rtags-FindSubClasses*
 rtags-FindSuperClasses	rtags.txt	/*rtags-FindSuperClasses*
 rtags-FindSymbols	rtags.txt	/*rtags-FindSymbols*
@@ -30,6 +31,7 @@ rtags-integration-unite	rtags.txt	/*rtags-integration-unite*
 rtags-integrations	rtags.txt	/*rtags-integrations*
 rtags-intro	rtags.txt	/*rtags-intro*
 rtags-leader-rC	rtags.txt	/*rtags-leader-rC*
+rtags-leader-rF	rtags.txt	/*rtags-leader-rF*
 rtags-leader-rJ	rtags.txt	/*rtags-leader-rJ*
 rtags-leader-rS	rtags.txt	/*rtags-leader-rS*
 rtags-leader-rT	rtags.txt	/*rtags-leader-rT*

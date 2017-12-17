@@ -150,6 +150,10 @@ if !exists('g:tcommentIgnoreTypes_php')
     let g:tcommentIgnoreTypes_php = 'sql'   "{{{2
 endif
 
+if !exists('g:tcommentIgnoreTypes_blade')
+    let g:tcommentIgnoreTypes_blade = 'html'   "{{{2
+endif
+
 if !exists('g:tcomment#syntax_substitute')
     " :read: let g:tcomment#syntax_substitute = {...}   "{{{2
     " Perform replacements on the syntax name.
@@ -563,6 +567,7 @@ call tcomment#DefineType('robot', {'col': 1, 'commentstring': '# %s'})
 call tcomment#DefineType('robots',           '# %s'             )
 call tcomment#DefineType('rust',             tcomment#GetLineC('// %s'))
 call tcomment#DefineType('rust_block',       g:tcommentBlockC   )
+call tcomment#DefineType('rust_inline',      g:tcommentInlineC  )
 call tcomment#DefineType('ruby',             '# %s'             )
 call tcomment#DefineType('ruby_3',           '### %s'           )
 call tcomment#DefineType('ruby_block',       '=begin rdoc%s=end')

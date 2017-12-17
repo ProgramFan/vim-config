@@ -384,14 +384,22 @@ process.
 Download and install the following software:
 
 - [Python 2 or Python 3][python-win-download]. Be sure to pick the version
-corresponding to your Vim architecture. It is _Windows x86_ for a 32-bit Vim and
-_Windows x86-64_ for a 64-bit Vim. We recommend installing Python 3.
+  corresponding to your Vim architecture. It is _Windows x86_ for a 32-bit Vim 
+  and _Windows x86-64_ for a 64-bit Vim. We recommend installing Python 3. 
+  Additionally, the version of Python you install must match up exactly with 
+  the version of Python that Vim is looking for. Type `:version` and look at the
+  bottom of the page at the list of compiler flags. Look for flags that look 
+  similar to `-DDYNAMIC_PYTHON_DLL=\"python27.dll\"` and 
+  `-DDYNAMIC_PYTHON3_DLL=\"python35.dll\"`. The former indicates that Vim is 
+  looking for Python 2.7 and the latter indicates that Vim is looking for 
+  Python 3.5. You'll need one or the other installed, matching the version 
+  number exactly.
 - [CMake][cmake-download]. Add CMake executable to the PATH environment
 variable.
 - [Visual Studio][visual-studio-download]. Download the community edition.
 During setup, select _Desktop development with C++_ in _Workloads_.
-- [7-zip][7z-download]. Required to build YCM with semantic support for
-C-family languages.
+- [7-zip 16.04 or later][7z-download]. Required to build YCM with semantic
+support for C-family languages.
 
 Compiling YCM **with** semantic support for C-family languages:
 
@@ -964,38 +972,36 @@ your file.
 
 #### Quick start
 
-1. Ensure that you have enabled the Tern completer. See the
+1. Ensure that you have enabled the JavaScript completer. See the
    [installation guide](#installation) for details.
 
 2. Create a `.tern-project` file in the root directory of your JavaScript
    project, by following the [instructions][tern-project] in the [Tern][]
    documentation.
 
-3. Make sure that Vim's working directory is a descendent of that directory (or
-   that directory itself) when working with JavaScript files.
+3. Edit a file from your project.
 
 #### Explanation
 
 JavaScript completion is based on [Tern][]. This completion engine requires a
 file named [`.tern-project`][tern-project] to exist in the current working
 directory or a directory which is an ancestor of the current working directory
-when the tern server is started. YCM starts the Tern server the first time a
-JavaScript file is edited, so Vim's working directory at that time needs to be a
-descendent of the directory containing the `.tern-project` file (or that
-directory itself).
+when the Tern server is started. YCM starts the Tern server the first time a
+JavaScript file is edited and uses its directory as the working directory, so
+the directory of that file at that time needs to be a descendent of the
+directory containing the `.tern-project` file (or that directory itself).
 
 Alternatively, as described in the [Tern documentation][tern-docs], a global
 `.tern-config` file may be used.
 
-Multiple Tern servers, are not supported. To switch to a different
-JavaScript project, you can do one of the following:
+Multiple Tern servers are not supported. To switch to a different JavaScript
+project, you need to restart the Tern server using [the `RestartServer`
+subcommand](#the-restartserver-subcommand) while editing a file of that
+project:
 
-- start a new instance of Vim from the new project's directory
-- change Vim's working directory (`:cd /path/to/new/project`) and restart the
-  [ycmd server][ycmd] (`:YcmRestartServer`)
-- change Vim's working directory (`:cd /path/to/new/project`), open a JavaScript
-  file (or set filetype to JavaScript) and restart the Tern server using YCM
-  completer subcommand `:YcmCompleter RestartServer`.
+```vim
+:YcmCompleter RestartServer
+```
 
 #### Tips and tricks
 
@@ -1318,7 +1324,7 @@ maps the `<leader>jd` sequence to the longer subcommand invocation.
 
 These commands are useful for jumping around and exploring code. When moving
 the cursor, the subcommands add entries to Vim's `jumplist` so you can use
-`CTRL-O` to jump back to where you where before invoking the command (and
+`CTRL-O` to jump back to where you were before invoking the command (and
 `CTRL-I` to jump forward; see `:h jumplist` for details). If there is more
 than one destination, the quickfix list (see `:h quickfix`) is populated with
 the available locations and opened to full width at the bottom of the screen.
@@ -1578,6 +1584,9 @@ flags.
 
 Restarts the semantic-engine-as-localhost-server for those semantic engines that
 work as separate servers that YCM talks to.
+
+Use this subcommand while editing a file from a JavaScript project to switch to
+that project.
 
 An additional optional argument may be supplied for Python, specifying the
 python binary to use to restart the Python semantic engine.
@@ -2667,9 +2676,12 @@ cache.
 
 ### YCM auto-inserts completion strings I don't want!
 
-This means you probably have some mappings that interfere with YCM's internal
-ones. Make sure you don't have something mapped to `<C-p>`, `<C-x>` or `<C-u>`
-(in insert mode).
+If this happens when Vim automatically wraps text then it's a Vim bug that has
+been fixed in version 8.0.0127. Update your Vim to this version or later.
+
+This could also be some mappings that interfere with YCM's internal ones. Make
+sure you don't have something mapped to `<C-p>`, `<C-x>` or `<C-u>` (in insert
+mode).
 
 YCM _never_ selects something for you; it just shows you a menu and the user has
 to explicitly select something. If something is being selected automatically,
@@ -2822,11 +2834,10 @@ details. If you want to see which tag files YCM will read for a given buffer,
 run `:echo tagfiles()` with the relevant buffer active. Note that that function
 will only list tag files that already exist.
 
-### `CTRL-U` in insert mode does not work
+### `CTRL-U` in insert mode does not work while the completion menu is visible
 
-YCM keeps you in a `completefunc` completion mode when you're typing in insert
-mode and Vim disables `<C-U>` in completion mode as a "feature." Sadly there's
-nothing I can do about this.
+YCM uses `completefunc` completion mode to show suggestions and Vim disables
+`<C-U>` in that mode as a "feature." Sadly there's nothing I can do about this.
 
 ### YCM conflicts with UltiSnips TAB key usage
 

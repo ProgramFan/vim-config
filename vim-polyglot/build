@@ -120,6 +120,7 @@ PACKS="
   caddyfile:isobit/vim-caddyfile
   cjsx:mtscout6/vim-cjsx
   clojure:guns/vim-clojure-static
+  cmake:pboettch/vim-cmake-syntax
   coffee-script:kchmck/vim-coffee-script
   cryptol:victoredwardocallaghan/cryptol.vim
   crystal:rhysd/vim-crystal
@@ -136,7 +137,6 @@ PACKS="
   fsharp:fsharp/vim-fsharp:_BASIC
   git:tpope/vim-git
   gmpl:maelvalais/gmpl.vim
-  openscad:sirtaj/vim-openscad
   glsl:tikhomirov/vim-glsl
   gnuplot:vim-scripts/gnuplot-syntax-highlighting
   go:fatih/vim-go:_BASIC
@@ -153,7 +153,7 @@ PACKS="
   json:elzr/vim-json
   jst:briancollins/vim-jst
   jsx:mxw/vim-jsx:_ALL
-  julia:dcjones/julia-minimalist-vim
+  julia:JuliaEditorSupport/julia-vim
   kotlin:udalov/kotlin-vim
   latex:LaTeX-Box-Team/LaTeX-Box
   less:groenewege/vim-less
@@ -165,7 +165,7 @@ PACKS="
   mathematica:rsmenon/vim-mathematica
   nginx:chr4/nginx.vim
   nim:zah/nim.vim:_BASIC
-  nix:spwhitt/vim-nix
+  nix:LnL7/vim-nix
   objc:b4winckler/vim-objc
   ocaml:jrk/vim-ocaml
   octave:vim-scripts/octave.vim--
@@ -193,6 +193,7 @@ PACKS="
   scala:derekwyatt/vim-scala
   scss:cakebaker/scss-syntax.vim
   slim:slim-template/vim-slim
+  slime:slime-lang/vim-slime-syntax
   solidity:tomlion/vim-solidity
   stylus:wavded/vim-stylus
   swift:keith/swift.vim

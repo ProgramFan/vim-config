@@ -9,6 +9,10 @@ if !exists('g:vim_json_syntax_conceal')
 endif
 
 let g:filetype_euphoria = 'elixir'
+
+augroup filetypedetect
+  autocmd BufNewFile,BufReadPost *.vb setlocal filetype=vbnet
+augroup END
 augroup filetypedetect
 " apiblueprint:sheerun/apiblueprint.vim
 autocmd BufReadPost,BufNewFile *.apib set filetype=apiblueprint
@@ -89,6 +93,10 @@ augroup END
 augroup filetypedetect
 " clojure:guns/vim-clojure-static
 autocmd BufNewFile,BufRead *.clj,*.cljs,*.edn,*.cljx,*.cljc,{build,profile}.boot setlocal filetype=clojure
+augroup END
+
+augroup filetypedetect
+" cmake:pboettch/vim-cmake-syntax
 augroup END
 
 augroup filetypedetect
@@ -296,12 +304,6 @@ au BufRead,BufNewFile *.mod set filetype=gmpl
 augroup END
 
 augroup filetypedetect
-" openscad:sirtaj/vim-openscad
-au BufRead,BufNewFile *.scad    setfiletype openscad
-an 50.80.265 &Syntax.NO.OpenSCAD :cal SetSyn("openscad")<CR>
-augroup END
-
-augroup filetypedetect
 " glsl:tikhomirov/vim-glsl
 " Language: OpenGL Shading Language
 " Maintainer: Sergey Tikhomirov <sergey@tikhomirov.io>
@@ -339,15 +341,18 @@ function! s:gofiletype_post()
   let &g:fileencodings = s:current_fileencodings
 endfunction
 
-au BufNewFile *.go setfiletype go | setlocal fileencoding=utf-8 fileformat=unix
-au BufRead *.go call s:gofiletype_pre("go")
-au BufReadPost *.go call s:gofiletype_post()
+augroup vim-go-filetype
+  autocmd!
+  au BufNewFile *.go setfiletype go | setlocal fileencoding=utf-8 fileformat=unix
+  au BufRead *.go call s:gofiletype_pre("go")
+  au BufReadPost *.go call s:gofiletype_post()
 
-au BufNewFile *.s setfiletype asm | setlocal fileencoding=utf-8 fileformat=unix
-au BufRead *.s call s:gofiletype_pre("asm")
-au BufReadPost *.s call s:gofiletype_post()
+  au BufNewFile *.s setfiletype asm | setlocal fileencoding=utf-8 fileformat=unix
+  au BufRead *.s call s:gofiletype_pre("asm")
+  au BufReadPost *.s call s:gofiletype_post()
 
-au BufRead,BufNewFile *.tmpl set filetype=gohtmltmpl
+  au BufRead,BufNewFile *.tmpl set filetype=gohtmltmpl
+augroup end
 
 " vim: sw=2 ts=2 et
 augroup END
@@ -390,7 +395,7 @@ augroup filetypedetect
 " i3:PotatoesMaster/i3-vim-syntax
 augroup i3_ftdetect
   au!
-  au BufRead,BufNewFile *i3/config set ft=i3
+  au BufRead,BufNewFile *i3/config,*sway/config set ft=i3
 augroup END
 augroup END
 
@@ -434,6 +439,7 @@ augroup filetypedetect
 autocmd BufNewFile,BufRead *.json setlocal filetype=json
 autocmd BufNewFile,BufRead *.jsonp setlocal filetype=json
 autocmd BufNewFile,BufRead *.geojson setlocal filetype=json
+autocmd BufNewFile,BufRead *.template setlocal filetype=json
 augroup END
 
 augroup filetypedetect
@@ -487,13 +493,28 @@ autocmd BufNewFile,BufRead *.js
 augroup END
 
 augroup filetypedetect
-" julia:dcjones/julia-minimalist-vim
-" NOTE: this line fixes an issue with the default system-wide lisp ftplugin
-"       which doesn't define b:undo_ftplugin
-"       (*.jt files are recognized as lisp)
-au BufRead,BufNewFile *.jl		let b:undo_ftplugin = "setlocal comments< define< formatoptions< iskeyword< lisp<"
+" julia:JuliaEditorSupport/julia-vim
+if v:version < 704
+  " NOTE: this line fixes an issue with the default system-wide lisp ftplugin
+  "       which didn't define b:undo_ftplugin on older Vim versions
+  "       (*.jl files are recognized as lisp)
+  autocmd BufRead,BufNewFile *.jl    let b:undo_ftplugin = "setlocal comments< define< formatoptions< iskeyword< lisp<"
+endif
 
-au BufRead,BufNewFile *.jl		set filetype=julia
+autocmd BufRead,BufNewFile *.jl      set filetype=julia
+
+autocmd FileType *                   call LaTeXtoUnicode#Refresh()
+autocmd BufEnter *                   call LaTeXtoUnicode#Refresh()
+
+" This autocommand is used to postpone the first initialization of LaTeXtoUnicode as much as possible,
+" by calling LaTeXtoUnicode#SetTab amd LaTeXtoUnicode#SetAutoSub only at InsertEnter or later
+function! s:L2UTrigger()
+  augroup L2UInit
+    autocmd!
+    autocmd InsertEnter *            let g:did_insert_enter = 1 | call LaTeXtoUnicode#Init(0)
+  augroup END
+endfunction
+autocmd BufEnter *                   call s:L2UTrigger()
 augroup END
 
 augroup filetypedetect
@@ -588,8 +609,14 @@ au BufNewFile,BufRead *.nim,*.nims set filetype=nim
 augroup END
 
 augroup filetypedetect
-" nix:spwhitt/vim-nix
-autocmd BufNewFile,BufRead *.nix setfiletype nix
+" nix:LnL7/vim-nix
+" Vim filetype detect
+" Language:    Nix
+" Maintainer:  Daiderd Jordan <daiderd@gmail.com>
+" URL:         https://github.com/LnL7/vim-nix
+
+au BufRead,BufNewFile *.nix set filetype=nix
+au FileType nix setl sw=2 sts=2 et iskeyword+=-
 augroup END
 
 augroup filetypedetect
@@ -919,7 +946,7 @@ fun! s:DetectScala()
     endif
 endfun
 
-au BufRead,BufNewFile *.scala set filetype=scala
+au BufRead,BufNewFile *.scala,*.sc set filetype=scala
 au BufRead,BufNewFile * call s:DetectScala()
 
 " Install vim-sbt for additional syntax highlighting.
@@ -935,6 +962,11 @@ augroup END
 augroup filetypedetect
 " slim:slim-template/vim-slim
 autocmd BufNewFile,BufRead *.slim setfiletype slim
+augroup END
+
+augroup filetypedetect
+" slime:slime-lang/vim-slime-syntax
+autocmd BufNewFile,BufRead *.slime set filetype=slime
 augroup END
 
 augroup filetypedetect
@@ -1021,8 +1053,8 @@ augroup END
 
 augroup filetypedetect
 " toml:cespare/vim-toml
-" Rust uses several TOML config files that are not named with .toml.
-autocmd BufNewFile,BufRead *.toml,Cargo.lock,*/.cargo/config set filetype=toml
+" Go dep and Rust use several TOML config files that are not named with .toml.
+autocmd BufNewFile,BufRead *.toml,Gopkg.lock,Cargo.lock,*/.cargo/config set filetype=toml
 augroup END
 
 augroup filetypedetect

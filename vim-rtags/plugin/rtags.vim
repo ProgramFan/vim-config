@@ -74,6 +74,7 @@ if g:rtagsUseDefaultMappings == 1
     noremap <Leader>rT :call rtags#JumpTo(g:NEW_TAB)<CR>
     noremap <Leader>rp :call rtags#JumpToParent()<CR>
     noremap <Leader>rf :call rtags#FindRefs()<CR>
+    noremap <Leader>rF :call rtags#FindRefsCallTree()<CR>
     noremap <Leader>rn :call rtags#FindRefsByName(input("Pattern? ", "", "customlist,rtags#CompleteSymbols"))<CR>
     noremap <Leader>rs :call rtags#FindSymbols(input("Pattern? ", "", "customlist,rtags#CompleteSymbols"))<CR>
     noremap <Leader>rr :call rtags#ReindexFile()<CR>
@@ -85,6 +86,22 @@ if g:rtagsUseDefaultMappings == 1
     noremap <Leader>rc :call rtags#FindSubClasses()<CR>
     noremap <Leader>rd :call rtags#Diagnostics()<CR>
 endif
+
+let s:script_folder_path = escape( expand( '<sfile>:p:h' ), '\' )
+
+function! rtags#InitPython()
+python << endpython
+import vim
+
+script_folder = vim.eval('s:script_folder_path')
+sys.path.insert(0, script_folder)
+
+import vimrtags
+
+endpython
+endfunction
+
+call rtags#InitPython()
 
 """
 " Logging routine
@@ -278,6 +295,122 @@ function! rtags#DisplayResults(results)
 endfunction
 
 "
+" Creates a tree viewer for references to a symbol
+"
+" param[in] results - List of locations, one per line
+"
+" Format of each line: <path>,<line>\s<text>\sfunction: <caller path>
+function! rtags#ViewReferences(results)
+    let cmd = g:rtagsMaxSearchResultWindowHeight . "new References"
+    silent execute cmd
+    setlocal noswapfile
+    setlocal buftype=nowrite
+    setlocal bufhidden=delete
+    setlocal nowrap
+    setlocal tw=0
+
+    iabc <buffer>
+
+    setlocal modifiable
+    silent normal ggdG
+    setlocal nomodifiable
+    let b:rtagsLocations=[]
+    call rtags#AddReferences(a:results, -1)
+    setlocal modifiable
+    silent normal ggdd
+    setlocal nomodifiable
+
+    let cpo_save = &cpo
+    set cpo&vim
+    nnoremap <buffer> <cr> :call <SID>OpenReference()<cr>
+    nnoremap <buffer> o    :call <SID>ExpandReferences()<cr>
+    let &cpo = cpo_save
+endfunction
+
+"
+" Expands the callers of the reference on the current line.
+"
+function! s:ExpandReferences() " <<<
+    let ln = line(".")
+    let l = getline(ln)
+
+    " Detect expandable region
+    let nr = matchlist(l, '#\([0-9]\+\)$')[1]
+    if !empty(b:rtagsLocations[nr].source)
+        let location = b:rtagsLocations[nr].source
+        let b:rtagsLocations[nr].source = ''
+        let args = {
+                \ '--containing-function-location' : '',
+                \ '-r' : location }
+        call rtags#ExecuteThen(args, [[function('rtags#AddReferences'), nr]])
+    endif
+endfunction " >>>
+
+"
+" Opens the reference for viewing in the window below.
+"
+function! s:OpenReference() " <<<
+    let ln = line(".")
+    let l = getline(ln)
+
+    " Detect openable region
+    let nr = matchlist(l, '#\([0-9]\+\)$')[1]
+    if !empty(nr)
+        let jump_file = b:rtagsLocations[nr].filename
+        let lnum = b:rtagsLocations[nr].lnum
+        let col = b:rtagsLocations[nr].col
+        wincmd j
+        " Add location to the jumplist
+        normal m'
+        if rtags#jumpToLocation(jump_file, lnum, col)
+            normal zz
+        endif
+    endif
+endfunction " >>>
+
+"
+" Adds the list of references below the targeted item in the reference
+" viewer window.
+"
+" param[in] results - List of locations, one per line
+" param[in] i - The index of the reference the added references are calling or -1
+"
+" Format of each line: <path>,<line>\s<text>\sfunction: <caller path>
+function! rtags#AddReferences(results, i)
+    let ln = line(".")
+    let nr = len(b:rtagsLocations)
+    let depth = 0
+    if a:i >= 0
+        let depth = b:rtagsLocations[a:i].depth + 1
+        silent execute "normal! gg/#".a:i."$\<cr>"
+    endif
+    let prefix = repeat(" ", depth * 2)
+    setlocal modifiable
+    for record in a:results
+        let [line; sourcefunc] = split(record, '\s\+function: ')
+        let [location; rest] = split(line, '\s\+')
+        let [file, lnum, col] = rtags#parseSourceLocation(location)
+        let entry = {}
+        let entry.filename = substitute(file, getcwd().'/', '', 'g')
+        let entry.filepath = file
+        let entry.lnum = lnum
+        let entry.col = col
+        let entry.vcol = 0
+        let entry.text = join(rest, ' ')
+        let entry.type = 'ref'
+        let entry.depth = depth
+        let entry.source = matchstr(sourcefunc, '[^\s]\+')
+        " TODO Hide the index number of the entry - this is an implementation
+        " detail that shouldn't be visible to the user.
+        silent execute "normal! A\<cr>\<esc>i".prefix . substitute(entry.filename, '.*/', '', 'g').':'.entry.lnum.' '.entry.text.' #'.nr."\<esc>"
+        call add(b:rtagsLocations, entry)
+        let nr = nr + 1
+    endfor
+    setlocal nomodifiable
+    exec (":" . ln)
+endfunction
+
+"
 " param[in] results - Data get by rc diagnose command (XML format)
 "
 function! rtags#DisplayDiagnosticsResults(results)
@@ -331,7 +464,7 @@ endfunction
 
 function! rtags#getCurrentLocation()
     let [lnum, col] = getpos('.')[1:2]
-    return printf("%s:%s:%s", expand("%"), lnum, col)
+    return printf("%s:%s:%s", expand("%:p"), lnum, col)
 endfunction
 
 function! rtags#SymbolInfoHandler(output)
@@ -648,6 +781,14 @@ function! rtags#FindRefs()
     call rtags#ExecuteThen(args, [function('rtags#DisplayResults')])
 endfunction
 
+function! rtags#FindRefsCallTree()
+    let args = {
+                \ '--containing-function-location' : '',
+                \ '-r' : rtags#getCurrentLocation() }
+
+    call rtags#ExecuteThen(args, [function('rtags#ViewReferences')])
+endfunction
+
 function! rtags#FindSuperClasses()
     call rtags#ExecuteThen({ '--class-hierarchy' : rtags#getCurrentLocation() },
                 \ [function('rtags#ExtractSuperClasses'), function('rtags#DisplayResults')])
@@ -769,11 +910,8 @@ function! rtags#FindSymbolsOfWordUnderCursor()
 endfunction
 
 function! rtags#Diagnostics()
-    let args = {
-                \ '--diagnose' : expand("%:p"),
-                \ '--synchronous-diagnostics' : '' }
-
-    call rtags#ExecuteThen(args, [function('rtags#DisplayDiagnosticsResults')])
+    let s:file = expand("%:p")
+    return s:Pyeval("vimrtags.get_diagnostics()")
 endfunction
 
 "
@@ -819,6 +957,10 @@ function! rtags#CompleteAtCursor(wordStart, base)
     "        echo r
     "    endfor
     "    call rtags#DisplayResults(result)
+endfunction
+
+function! s:Pyeval( eval_string )
+  return pyeval( a:eval_string )
 endfunction
     
 function! s:RcExecuteJobCompletion()
@@ -954,6 +1096,7 @@ endf
 "     Reason: rtags returns all options regardless of already type method name
 "     portion
 """
+
 function! RtagsCompleteFunc(findstart, base)
     if s:rtagsAsync == 1 && !has('nvim')
         return s:RtagsCompleteFunc(a:findstart, a:base, 1)
@@ -966,74 +1109,16 @@ function! s:RtagsCompleteFunc(findstart, base, async)
     call rtags#Log("RtagsCompleteFunc: [".a:findstart."], [".a:base."]")
 
     if a:findstart
-        let l:start = col('.') - 1
-        if a:async == 0
-            " got from RipRip/clang_complete
-            let l:line = getline('.')
-            let l:wsstart = l:start
-            if l:line[l:wsstart - 1] =~ '\s'
-                while l:wsstart > 0 && l:line[l:wsstart - 1] =~ '\s'
-                    let l:wsstart -= 1
-                endwhile
-            endif
-            while l:start > 0 && l:line[l:start - 1] =~ '\i'
-                let l:start -= 1
-            endwhile
-            let b:col = l:start + 1
-            call rtags#Log("column:".b:col)
-            call rtags#Log("start:".l:start)
-        else
-            "buffer local variable
-            call rtags#ExistsAndCreateRtagsState()
-
-            if rtags#IsJobStateBusy() == 1
-                return -3
-            elseif rtags#IsJobStateReady() == 1
-                let b:firstBase = a:base
-
-                let pos = getpos('.')
-                let l:line = pos[1] 
-                let l:col = pos[2]
-
-                if index(['.', '::', '->'], a:base) != -1
-                    let l:col += 1
-                endif
-                let l:stdin_lines = join(getline(1, "$"), "\n").a:base
-                let l:offset = len(l:stdin_lines)
-
-                call s:RcJobExecute(l:offset, l:line, l:col)
-                return -3
-            elseif rtags#IsJobStateFinish() == 1
-                call rtags#SetJobStateReady()
-            endif
-        endif
-        return l:start
+        let s:line = getline('.')
+        let s:start = col('.') - 2
+        return s:Pyeval("vimrtags.get_identifier_beginning()")
     else
-
-        let wordstart = getpos('.')[0]
-        if a:async == 0
-            let l:completeopts = rtags#CompleteAtCursor(wordstart, a:base)
-        else
-            let l:completeopts = rtags#GetJobStdOutput()
-        endif
-
-        let a = []
-        for line in l:completeopts
-            let option = split(line)
-            if a:base != "" && stridx(option[0], a:base) != 0
-                continue
-            endif
-            let match = {}
-            let match.word = option[0]
-            let match.kind = option[len(option) - 1]
-            if match.kind == "CXXMethod"
-                let match.word = match.word.'('
-            endif
-            let match.menu = join(option[1:len(option) - 1], ' ')
-            call add(a, match)
-            "call rtags#Log(match)
-        endfor
-        return a
+        let pos = getpos('.')
+        let s:file = expand("%:p")
+        let s:line = str2nr(pos[1])
+        let s:col = str2nr(pos[2]) + len(a:base)
+        let s:prefix = a:base
+        return s:Pyeval("vimrtags.send_completion_request()")
     endif
 endfunction
 

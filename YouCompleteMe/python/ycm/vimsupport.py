@@ -139,10 +139,10 @@ def GetUnsavedAndSpecifiedBufferData( including_filepath ):
   return buffers_data
 
 
-def GetBufferNumberForFilename( filename, open_file_if_needed = True ):
+def GetBufferNumberForFilename( filename, create_buffer_if_needed = False ):
   return GetIntValue( u"bufnr('{0}', {1})".format(
       EscapeForVim( os.path.realpath( filename ) ),
-      int( open_file_if_needed ) ) )
+      int( create_buffer_if_needed ) ) )
 
 
 def GetCurrentBufferFilepath():
@@ -158,7 +158,7 @@ def BufferIsVisible( buffer_number ):
 
 def GetBufferFilepath( buffer_object ):
   if buffer_object.name:
-    return ToUnicode( buffer_object.name )
+    return os.path.normpath( ToUnicode( buffer_object.name ) )
   # Buffers that have just been created by a command like :enew don't have any
   # buffer name so we use the buffer number for that.
   return os.path.join( GetCurrentDirectory(), str( buffer_object.number ) )
@@ -328,7 +328,8 @@ def ConvertDiagnosticsToQfList( diagnostics ):
       text += ' (FixIt available)'
 
     return {
-      'bufnr' : GetBufferNumberForFilename( location[ 'filepath' ] ),
+      'bufnr' : GetBufferNumberForFilename( location[ 'filepath' ],
+                                            create_buffer_if_needed = True ),
       'lnum'  : line_num,
       'col'   : location[ 'column_num' ],
       'text'  : text,
@@ -370,8 +371,9 @@ def BufferIsUsable( buffer_object ):
   return not BufferModified( buffer_object ) or HiddenEnabled( buffer_object )
 
 
-def EscapedFilepath( filepath ):
-  return filepath.replace( ' ' , r'\ ' )
+def EscapeFilepathForVimCommand( filepath ):
+  to_eval = "fnameescape('{0}')".format( EscapeForVim( filepath ) )
+  return GetVariableValue( to_eval )
 
 
 # Both |line| and |column| need to be 1-based
@@ -421,8 +423,8 @@ def JumpToLocation( filename, line, column ):
 
     vim_command = GetVimCommand( user_command )
     try:
-      vim.command( 'keepjumps {0} {1}'.format( vim_command,
-                                               EscapedFilepath( filename ) ) )
+      escaped_filename = EscapeFilepathForVimCommand( filename )
+      vim.command( 'keepjumps {0} {1}'.format( vim_command, escaped_filename ) )
     # When the file we are trying to jump to has a swap file
     # Vim opens swap-exists-choices dialog and throws vim.error with E325 error,
     # or KeyboardInterrupt after user selects one of the options.
@@ -588,18 +590,18 @@ def EscapeForVim( text ):
 
 
 def CurrentFiletypes():
-  return VimExpressionToPythonType( "&filetype" ).split( '.' )
+  return ToUnicode( vim.eval( "&filetype" ) ).split( '.' )
 
 
 def GetBufferFiletypes( bufnr ):
   command = 'getbufvar({0}, "&ft")'.format( bufnr )
-  return VimExpressionToPythonType( command ).split( '.' )
+  return ToUnicode( vim.eval( command ) ).split( '.' )
 
 
 def FiletypesForBuffer( buffer_object ):
   # NOTE: Getting &ft for other buffers only works when the buffer has been
   # visited by the user at least once, which is true for modified buffers
-  return GetBufferOption( buffer_object, 'ft' ).split( '.' )
+  return ToUnicode( GetBufferOption( buffer_object, 'ft' ) ).split( '.' )
 
 
 def VariableExists( variable ):
@@ -641,7 +643,7 @@ def _GetNumNonVisibleFiles( file_list ):
   are not curerntly open in visible windows"""
   return len(
       [ f for f in file_list
-        if not BufferIsVisible( GetBufferNumberForFilename( f, False ) ) ] )
+        if not BufferIsVisible( GetBufferNumberForFilename( f ) ) ] )
 
 
 def _OpenFileInSplitIfNeeded( filepath ):
@@ -658,7 +660,7 @@ def _OpenFileInSplitIfNeeded( filepath ):
   not to open a file, or if opening fails, this method raises RuntimeError,
   otherwise, guarantees to return a visible buffer number in buffer_num."""
 
-  buffer_num = GetBufferNumberForFilename( filepath, False )
+  buffer_num = GetBufferNumberForFilename( filepath )
 
   # We only apply changes in the current tab page (i.e. "visible" windows).
   # Applying changes in tabs does not lead to a better user experience, as the
@@ -681,7 +683,7 @@ def _OpenFileInSplitIfNeeded( filepath ):
   # OpenFilename returns us to the original cursor location. This is what we
   # want, because we don't want to disorientate the user, but we do need to
   # know the (now open) buffer number for the filename
-  buffer_num = GetBufferNumberForFilename( filepath, False )
+  buffer_num = GetBufferNumberForFilename( filepath )
   if not BufferIsVisible( buffer_num ):
     # This happens, for example, if there is a swap file and the user
     # selects the "Quit" or "Abort" options. We just raise an exception to
@@ -959,16 +961,16 @@ def WriteToPreviewWindow( message ):
 
 def BufferIsVisibleForFilename( filename ):
   """Check if a buffer exists for a specific file."""
-  buffer_number = GetBufferNumberForFilename( filename, False )
+  buffer_number = GetBufferNumberForFilename( filename )
   return BufferIsVisible( buffer_number )
 
 
 def CloseBuffersForFilename( filename ):
   """Close all buffers for a specific file."""
-  buffer_number = GetBufferNumberForFilename( filename, False )
+  buffer_number = GetBufferNumberForFilename( filename )
   while buffer_number != -1:
     vim.command( 'silent! bwipeout! {0}'.format( buffer_number ) )
-    new_buffer_number = GetBufferNumberForFilename( filename, False )
+    new_buffer_number = GetBufferNumberForFilename( filename )
     if buffer_number == new_buffer_number:
       raise RuntimeError( "Buffer {0} for filename '{1}' should already be "
                           "wiped out.".format( buffer_number, filename ) )

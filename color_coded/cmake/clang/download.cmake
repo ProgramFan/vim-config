@@ -1,19 +1,16 @@
 if(NOT CUSTOM_CLANG)
-  set(CLANG_VERSION "3.9.0")
+  set(CLANG_VERSION "5.0.0")
   message(STATUS "Locating trusted Clang/LLVM ${CLANG_VERSION}")
 
   set(CLANG_URL "http://llvm.org/releases/${CLANG_VERSION}" )
   if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-x86_64-apple-darwin")
-    set(CLANG_MD5 "4dc92cf9c7a9726b049c2443a3223a30")
+    set(CLANG_SHA256 "326be172ccb61210c9ae5dced27204977e249ec6589521cc30f82fd0904b0671")
     set(CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz")
   elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     if(64_BIT_PLATFORM)
-      # Using OpenSuSE binary to avoid terminfo dependency
-      # See https://github.com/Valloric/YouCompleteMe/issues/778 and
-      # https://github.com/jeaye/color_coded/issues/144
-      set(CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-x86_64-opensuse13.2")
-      set(CLANG_MD5 "31ef61aad2b5ca6bfccb40ce48752292")
+      set(CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-linux-x86_64-ubuntu14.04")
+      set(CLANG_SHA256 "58c1171f326108cfb7641441c5ede7846d58823bce3206c86a84c7ef7748860d")
       set(CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz")
     else()
       message(FATAL_ERROR "No pre-built Clang ${CLANG_VERSION} binaries for 32 bit Linux; this system is not supported")
@@ -21,18 +18,18 @@ if(NOT CUSTOM_CLANG)
   elseif(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     if(64_BIT_PLATFORM)
       set(CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-amd64-unknown-freebsd10")
-      set(CLANG_MD5 "50e9404df3c0db27bceea6f62dad4790")
+      set(CLANG_SHA256 "e55b646390da0a24e27f9761eecf0b31936483c9a3e84c12de0bb1a0d95bab6c")
       set(CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz")
     else()
       set(CLANG_DIRNAME "clang+llvm-${CLANG_VERSION}-i386-unknown-freebsd10")
-      set(CLANG_MD5 "e356018b77c463f04ba677c85050c2e6")
+      set(CLANG_SHA256 "2ea32ad7cd30d8e849113747b5bfda8e6eb0fb2f9b01cbe9eb61e884c0bd69eb")
       set(CLANG_FILENAME "${CLANG_DIRNAME}.tar.xz")
     endif()
   endif()
 
   file(DOWNLOAD
     "${CLANG_URL}/${CLANG_FILENAME}" "./${CLANG_FILENAME}"
-    SHOW_PROGRESS EXPECTED_MD5 "${CLANG_MD5}")
+    SHOW_PROGRESS EXPECTED_HASH SHA256=${CLANG_SHA256})
 
   message(STATUS "Found ${CLANG_FILENAME}")
 

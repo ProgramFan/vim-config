@@ -27,16 +27,25 @@ endfunction
 " Check if files are executable, and if they are, remember that they are
 " for subsequent calls. We'll keep checking until programs can be executed.
 function! ale#engine#IsExecutable(buffer, executable) abort
-    if has_key(s:executable_cache_map, a:executable)
-        return 1
+    if empty(a:executable)
+        " Don't log the executable check if the executable string is empty.
+        return 0
     endif
 
-    let l:result = 0
+    " Check for a cached executable() check.
+    let l:result = get(s:executable_cache_map, a:executable, v:null)
 
-    if executable(a:executable)
-        let s:executable_cache_map[a:executable] = 1
+    if l:result isnot v:null
+        return l:result
+    endif
 
-        let l:result = 1
+    " Check if the file is executable, and convert -1 to 1.
+    let l:result = executable(a:executable) isnot 0
+
+    " Cache the executable check if we found it, or if the option to cache
+    " failing checks is on.
+    if l:result || g:ale_cache_executable_check_failures
+        let s:executable_cache_map[a:executable] = l:result
     endif
 
     if g:ale_history_enabled
@@ -251,10 +260,10 @@ function! s:HandleTSServerDiagnostics(response, error_type) abort
 endfunction
 
 function! s:HandleLSPErrorMessage(error_message) abort
-    echoerr 'Error from LSP:'
+    execute 'echoerr ''Error from LSP:'''
 
     for l:line in split(a:error_message, "\n")
-        echoerr l:line
+        execute 'echoerr l:line'
     endfor
 endfunction
 
@@ -312,7 +321,9 @@ function! ale#engine#SetResults(buffer, loclist) abort
         call ale#engine#RemoveManagedFiles(a:buffer)
 
         " Call user autocommands. This allows users to hook into ALE's lint cycle.
-        silent doautocmd User ALELint
+        silent doautocmd <nomodeline> User ALELintPost
+        " Old DEPRECATED name; call it for backwards compatibility.
+        silent doautocmd <nomodeline> User ALELint
     endif
 endfunction
 
@@ -373,6 +384,10 @@ function! ale#engine#FixLocList(buffer, linter_name, loclist) abort
         \   'nr': get(l:old_item, 'nr', -1),
         \   'linter_name': a:linter_name,
         \}
+
+        if has_key(l:old_item, 'code')
+            let l:item.code = l:old_item.code
+        endif
 
         if has_key(l:old_item, 'filename')
         \&& !ale#path#IsTempName(l:old_item.filename)
@@ -772,6 +787,8 @@ function! ale#engine#RunLinters(buffer, linters, should_lint_file) abort
     " We can only clear the results if we aren't checking the buffer.
     let l:can_clear_results = !ale#engine#IsCheckingBuffer(a:buffer)
 
+    silent doautocmd <nomodeline> User ALELintPre
+
     for l:linter in a:linters
         " Only run lint_file linters if we should.
         if !l:linter.lint_file || a:should_lint_file
@@ -801,6 +818,11 @@ endfunction
 " clear the state of everything, and remove the Dictionary for managing
 " the buffer.
 function! ale#engine#Cleanup(buffer) abort
+    " Don't bother with cleanup code when newer NeoVim versions are exiting.
+    if get(v:, 'exiting', v:null) isnot v:null
+        return
+    endif
+
     if !has_key(g:ale_buffer_info, a:buffer)
         return
     endif
@@ -836,7 +858,7 @@ function! ale#engine#WaitForJobs(deadline) abort
 
     " Gather all of the jobs from every buffer.
     for l:info in values(g:ale_buffer_info)
-        call extend(l:job_list, l:info.job_list)
+        call extend(l:job_list, get(l:info, 'job_list', []))
     endfor
 
     " NeoVim has a built-in API for this, so use that.
@@ -884,7 +906,7 @@ function! ale#engine#WaitForJobs(deadline) abort
 
     " Check again to see if any jobs are running.
     for l:info in values(g:ale_buffer_info)
-        for l:job_id in l:info.job_list
+        for l:job_id in get(l:info, 'job_list', [])
             if ale#job#IsRunning(l:job_id)
                 let l:has_new_jobs = 1
                 break

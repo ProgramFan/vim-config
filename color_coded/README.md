@@ -6,7 +6,7 @@ color_coded is a vim plugin that provides realtime (fast), tagless code highligh
   * Lua binding for VimL -> C++
   * Exhaustive customization possibilities
   * Unintrusive highlighting; self-contained
-  * Utilizes self-contained clang 3.9.0
+  * Utilizes self-contained clang
 
 Before color_coded | After color_coded
 :------------------:|:------------------:
@@ -87,7 +87,7 @@ Installation with [NeoBundle](https://github.com/Shougo/neobundle.vim) supports 
 ```viml
 NeoBundleLazy 'jeaye/color_coded', {
   \ 'build': {
-    \   'unix': 'cmake . && make && make install',
+    \   'unix': 'rm -f CMakeCache.txt && cmake . && make && make install',
   \ },
   \ 'autoload': { 'filetypes' : ['c', 'cpp', 'objc', 'objcpp'] },
   \ 'build_commands' : ['cmake', 'make']
@@ -100,6 +100,7 @@ Since color_coded has a compiled component, you'll need to manually compile when
 
 ```bash
 cd ~/.vim/bundle/color_coded
+rm -f CMakeCache.txt
 mkdir build && cd build
 cmake ..
 make && make install # Compiling with GCC is preferred, ironically
@@ -269,12 +270,6 @@ least patch 1691. See [this issue](https://github.com/jeaye/color_coded/issues/1
 
 #### How can I get support?
 Feel free to make an issue on Github or email me or catch me on IRC: Freenode @ `#color_coded`
-
-## Donate
-Feel free to shoot Bitcoins my way: **1BRbkEpuQYmPptHdkfkDfNnnnMJd9GdCTW**
-
-For more information regarding how I use donations, see
-[here](http://jeaye.com/donate/).
 
 License
 ---
