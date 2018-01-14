@@ -31,7 +31,7 @@ Plug 'junegunn/vim-easy-align'
 Plug 'vim-pandoc/vim-pandoc-syntax'
 Plug 'vim-pandoc/vim-pandoc-after'
 Plug 'vim-pandoc/vim-pandoc'
-Plug 'ProgramFan/vim-asciidoctor'
+" Plug 'ProgramFan/vim-asciidoctor'
 
 " VimAirline: powerline replacement
 Plug 'vim-airline/vim-airline'
@@ -64,7 +64,9 @@ Plug 'lyuts/vim-rtags'
 Plug 'w0rp/ale' " yet another linter, but asynchronous
 Plug 'vim-scripts/DoxygenToolkit.vim', { 'for': ['c', 'cpp'] }
 Plug 'klen/python-mode', { 'for': 'python' }
+
 Plug 'SirVer/ultisnips'
+Plug 'honza/vim-snippets'
 
 Plug 'Chiel92/vim-autoformat'
 
@@ -73,5 +75,9 @@ Plug 'tomtom/tcomment_vim'
 
 Plug 'KabbAmine/zeavim.vim'
 Plug 'rizzatti/dash.vim'
+
+" Latex: latex plugins
+Plug 'lervag/vimtex'
+Plug 'ajh17/VimCompletesMe'
 
 call plug#end()
