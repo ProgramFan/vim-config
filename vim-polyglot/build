@@ -52,6 +52,13 @@ extract() {
       fi
     done
 
+    output "${subdirs##, })\n"
+
+    if (echo "julia coffee-script elixir fish git plantuml scala swift"  | fgrep -q "$name"); then
+	echo "Skipping ftdetect installation of $name"
+	continue
+    fi
+
     for f in ${dir}/ftdetect/*; do
       (
         echo "augroup filetypedetect";
@@ -62,7 +69,6 @@ extract() {
       ) >> tmp/polyglot.vim;
     done
 
-    output "${subdirs##, })\n"
   done
 
   mv tmp/polyglot.vim ftdetect/
@@ -80,7 +86,7 @@ extract() {
 }
 
 copy_dir() {
-  for file in $(find "$1/$2" -name '*.vim'); do
+  for file in $(find "$1/$2" -name '*.vim' -o -name '*.vital'); do
     file_path="$(dirname "${file##$1/}")"
     mkdir -p "$file_path"
     touch "$file_path/$(basename "$file")"
@@ -118,6 +124,7 @@ PACKS="
   c++11:octol/vim-cpp-enhanced-highlight
   c/c++:vim-jp/vim-cpp
   caddyfile:isobit/vim-caddyfile
+  carp:hellerve/carp-vim
   cjsx:mtscout6/vim-cjsx
   clojure:guns/vim-clojure-static
   cmake:pboettch/vim-cmake-syntax
@@ -151,6 +158,7 @@ PACKS="
   javascript:pangloss/vim-javascript:_JAVASCRIPT
   jenkins:martinda/Jenkinsfile-vim-syntax
   json:elzr/vim-json
+  json5:GutenYe/json5.vim
   jst:briancollins/vim-jst
   jsx:mxw/vim-jsx:_ALL
   julia:JuliaEditorSupport/julia-vim
@@ -179,8 +187,9 @@ PACKS="
   pug:digitaltoad/vim-pug
   puppet:voxpupuli/vim-puppet
   purescript:purescript-contrib/purescript-vim
-  python:mitsuhiko/vim-python-combined
+  python:vim-python/python-syntax
   python-compiler:aliev/vim-compiler-python
+  python-ident:Vimjas/vim-python-pep8-indent
   qml:peterhoeg/vim-qml
   r-lang:vim-scripts/R.vim
   racket:wlangstroth/vim-racket

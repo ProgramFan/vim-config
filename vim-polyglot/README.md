@@ -21,6 +21,12 @@ A collection of language packs for Vim.
 1. Install [Pathogen](https://github.com/tpope/vim-pathogen), [Vundle](https://github.com/VundleVim/Vundle.vim), [NeoBundle](https://github.com/Shougo/neobundle.vim), or [Plug](https://github.com/junegunn/vim-plug) package manager for Vim.
 2. Use this repository as submodule or package.
 
+For example when using [Plug](https://github.com/junegunn/vim-plug):
+
+```
+Plug 'sheerun/vim-polyglot'
+```
+
 Optionally download one of the [releases](https://github.com/sheerun/vim-polyglot/releases) and unpack it directly under `~/.vim` directory.
 
 You can also use Vim 8 built-in package manager:
@@ -46,6 +52,7 @@ If you need full functionality of any plugin, please use it directly with your p
 - [c++11](https://github.com/octol/vim-cpp-enhanced-highlight) (syntax)
 - [c/c++](https://github.com/vim-jp/vim-cpp) (syntax)
 - [caddyfile](https://github.com/isobit/vim-caddyfile) (syntax, indent, ftplugin)
+- [carp](https://github.com/hellerve/carp-vim) (syntax)
 - [cjsx](https://github.com/mtscout6/vim-cjsx) (syntax, ftplugin)
 - [clojure](https://github.com/guns/vim-clojure-static) (syntax, indent, autoload, ftplugin)
 - [cmake](https://github.com/pboettch/vim-cmake-syntax) (syntax, indent)
@@ -78,12 +85,13 @@ If you need full functionality of any plugin, please use it directly with your p
 - [jasmine](https://github.com/glanotte/vim-jasmine) (syntax)
 - [javascript](https://github.com/pangloss/vim-javascript) (syntax, indent, compiler, ftplugin, extras)
 - [jenkins](https://github.com/martinda/Jenkinsfile-vim-syntax) (syntax, indent)
+- [json5](https://github.com/GutenYe/json5.vim) (syntax)
 - [json](https://github.com/elzr/vim-json) (syntax, indent, ftplugin)
 - [jst](https://github.com/briancollins/vim-jst) (syntax, indent)
 - [jsx](https://github.com/mxw/vim-jsx) (after)
 - [julia](https://github.com/JuliaEditorSupport/julia-vim) (syntax, indent, autoload, ftplugin)
 - [kotlin](https://github.com/udalov/kotlin-vim) (syntax, indent)
-- [latex](https://github.com/LaTeX-Box-Team/LaTeX-Box) ()
+- [latex](https://github.com/LaTeX-Box-Team/LaTeX-Box) (syntax, indent, ftplugin)
 - [less](https://github.com/groenewege/vim-less) (syntax, indent, ftplugin)
 - [liquid](https://github.com/tpope/vim-liquid) (syntax, indent, ftplugin)
 - [livescript](https://github.com/gkz/vim-ls) (syntax, indent, compiler, ftplugin)
@@ -108,7 +116,8 @@ If you need full functionality of any plugin, please use it directly with your p
 - [puppet](https://github.com/voxpupuli/vim-puppet) (syntax, indent, ftplugin)
 - [purescript](https://github.com/purescript-contrib/purescript-vim) (syntax, indent, ftplugin)
 - [python-compiler](https://github.com/aliev/vim-compiler-python) (compiler, autoload)
-- [python](https://github.com/mitsuhiko/vim-python-combined) (syntax, indent)
+- [python-ident](https://github.com/Vimjas/vim-python-pep8-indent) (indent)
+- [python](https://github.com/vim-python/python-syntax) (syntax)
 - [qml](https://github.com/peterhoeg/vim-qml) (syntax, indent, ftplugin)
 - [r-lang](https://github.com/vim-scripts/R.vim) (syntax, ftplugin)
 - [racket](https://github.com/wlangstroth/vim-racket) (syntax, indent, autoload, ftplugin)

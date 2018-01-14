@@ -35,7 +35,7 @@ set(CLANG_FOUND FALSE)
 
 if (LLVM_FOUND AND LLVM_LIBRARY_DIRS)
   MACRO(FIND_AND_ADD_CLANG_LIB _libname_)
-  find_library(CLANG_${_libname_}_LIB ${_libname_} HINTS ${LLVM_LIBRARY_DIRS})
+  find_library(CLANG_${_libname_}_LIB ${_libname_} HINTS ${LLVM_LIBRARY_DIRS} ${CLANG_LIBRARY_DIRS})
   if (CLANG_${_libname_}_LIB)
      set(CLANG_LIBS ${CLANG_LIBS} ${CLANG_${_libname_}_LIB})
   endif (CLANG_${_libname_}_LIB)
@@ -84,8 +84,12 @@ else()
 endif()
 
 if(CLANG_FOUND)
-  set(CLANG_LIBRARY_DIRS ${LLVM_LIBRARY_DIRS})
-  set(CLANG_INCLUDE_DIRS ${LLVM_INCLUDE_DIRS})
+  if (NOT DEFINED CLANG_LIBRARY_DIRS)
+    set(CLANG_LIBRARY_DIRS ${LLVM_LIBRARY_DIRS})
+  endif()
+  if (NOT DEFINED CLANG_INCLUDE_DIRS)
+    set(CLANG_INCLUDE_DIRS ${LLVM_INCLUDE_DIRS})
+  endif()
 
   # check whether llvm-config comes from an install prefix
   execute_process(

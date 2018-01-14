@@ -54,6 +54,8 @@ function! s:source.hooks.on_init(args, context) abort "{{{
       \ unite#util#input('Target: ', '.', 'file')
   endif
 
+  let target = unite#util#expand(target)
+
   if target ==# ''
     let a:context.source__targets = []
     let a:context.source__input = ''

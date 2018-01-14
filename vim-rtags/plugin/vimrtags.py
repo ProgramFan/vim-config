@@ -2,9 +2,13 @@ import vim
 import json
 import subprocess
 import io
+import os
+import sys
+import tempfile
 
 import logging
-logging.basicConfig(filename='/tmp/vim-rtags-python.log',level=logging.DEBUG)
+tempdir = tempfile.gettempdir()
+logging.basicConfig(filename='%s/vim-rtags-python.log' % tempdir,level=logging.DEBUG)
 
 def get_identifier_beginning():
     line = vim.eval('s:line')
@@ -19,15 +23,54 @@ def get_identifier_beginning():
     return column + 1
 
 def run_rc_command(arguments, content = None):
-    r = subprocess.run('rc ' + arguments, input = content,
-            stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = True,
-            encoding = 'utf-8')
+    rc_cmd = os.path.expanduser(vim.eval('g:rtagsRcCmd'))
+    cmdline = rc_cmd + " " + arguments
+
+    encoding = 'utf-8'
+    out = None
+    err = None
+    if sys.version_info.major == 3 and sys.version_info.minor >= 5:
+        r = subprocess.run(
+            cmdline.split(),
+            input = content,
+            stdout = subprocess.PIPE,
+            stderr = subprocess.PIPE,
+            shell = True
+        )
+        out, err = r.stdout, r.stderr
+        if not out is None:
+            out = out.decode(encoding)
+        if not err is None:
+            err = err.decode(encoding)
+
+    elif sys.version_info.major == 3 and sys.version_info.minor < 5:
+        r = subprocess.Popen(
+            cmdline.split(),
+            bufsize=0,
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
+        out, err = r.communicate(input=content.encode(encoding))
+        if not out is None:
+            out = out.decode(encoding)
+        if not err is None:
+            err = err.decode(encoding)
+    else:
+        r = subprocess.Popen(
+            cmdline.split(),
+            stdout=subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
+        out, err = r.communicate(input=content)
 
     if r.returncode != 0:
-        logging.debug(r.stderr)
+        logging.debug(err)
         return None
 
-    return r.stdout
+    return out
+
 
 def get_rtags_variable(name):
     return vim.eval('g:rtags' + name)
@@ -142,7 +185,7 @@ def get_diagnostics():
             is_modified = bool(int((vim.eval('getbufvar(%d, "&mod")' % buffer.number))))
             cmd = '--diagnose %s --synchronous-diagnostics --json' % filename
 
-            content = None
+            content = ''
             if is_modified:
                 content = '\n'.join([x for x in buffer])
                 cmd += ' --unsaved-file=%s:%d' % (filename, len(content))
@@ -152,3 +195,5 @@ def get_diagnostics():
                 return None
 
             display_diagnostics_results(content, buffer)
+
+    return 0

@@ -6,6 +6,30 @@ YouCompleteMe: a code-completion engine for Vim
 [![Build status](https://ci.appveyor.com/api/projects/status/ag9uqwi8s6btwjd8/branch/master?svg=true)](https://ci.appveyor.com/project/Valloric/YouCompleteMe)
 [![Coverage Status](https://codecov.io/gh/Valloric/YouCompleteMe/branch/master/graph/badge.svg)](https://codecov.io/gh/Valloric/YouCompleteMe)
 
+Help, Advice, Support
+---------------------
+
+Looking for help, advice or support? Having problems getting YCM to work?
+
+First carefully read the [installation instructions](#installation) for your OS.
+We recommend you use the supplied `install.py`.
+
+Next check the [User Guide](#user-guide) section on the semantic completer that
+you are using. For C/C++/Objective C, you  _must_ read
+[this section](#c-family-semantic-completion).
+
+Finally, check the [FAQ](#faq).
+
+If, after reading the installation and user guides, and checking the FAQ, you're
+still having trouble, check the [contacts](#contact) section below for how to
+get in touch.
+
+Please do **NOT** go to #vim on freenode for support. Please contact the
+YouCompleteMe maintainers directly using the [contact details](#contact) below.
+
+Contents
+--------
+
 - [Intro](#intro)
 - [Installation](#installation)
     - [Mac OS X](#mac-os-x)
@@ -41,6 +65,7 @@ YouCompleteMe: a code-completion engine for Vim
 - [Contributor Code of Conduct](#contributor-code-of-conduct)
 - [Contact](#contact)
 - [License](#license)
+
 
 Intro
 -----
@@ -679,10 +704,9 @@ process.
       Navigate to `YouCompleteMe/third_party/ycmd/third_party/OmniSharpServer`
       and run
 
-          msbuild /property:Configuration=Release /property:TargetFrameworkVersion=v4.5
+          msbuild /property:Configuration=Release /property:Platform="Any CPU" /property:TargetFrameworkVersion=v4.5
 
-      Replace `msbuild` by `xbuild` if `msbuild` is not available. On Windows,
-      be sure that [the build utility `msbuild` is in your
+      On Windows, be sure that [the build utility `msbuild` is in your
       PATH][add-msbuild-to-path].
 
     - Go support: install [Go][go-install] and add it to your path. Navigate to
@@ -1283,9 +1307,15 @@ completion engine.
 
 ### The `:YcmToggleLogs` command
 
-This command opens in separate windows the logfiles given as arguments or closes
-them if they are already open in the editor. When no argument is given, list the
-available logfiles. Only for debugging purpose.
+This command presents the list of logfiles created by YCM, the [ycmd
+server][ycmd], and the semantic engine server for the current filetype, if any.
+One of these logfiles can be opened in the editor (or closed if already open) by
+entering the corresponding number or by clicking on it with the mouse.
+Additionally, this command can take the logfile names as arguments. Use the
+`<TAB>` key (or any other key defined by the `wildchar` option) to complete the
+arguments or to cycle through them (depending on the value of the `wildmode`
+option). Each logfile given as an argument is directly opened (or closed if
+already open) in the editor. Only for debugging purposes.
 
 ### The `:YcmCompleter` command
 
@@ -3071,13 +3101,17 @@ If you have questions about the plugin or need help, please join the [Gitter
 room][gitter] or use the [ycm-users][] mailing list.
 
 If you have bug reports or feature suggestions, please use the [issue
-tracker][tracker].
+tracker][tracker]. Before you do, please carefully read
+[CONTRIBUTING.md][contributing-md] as this asks for important diagnostics which
+the team will use to help get you going.
 
 The latest version of the plugin is available at
 <http://valloric.github.io/YouCompleteMe/>.
 
 The author's homepage is <http://val.markovic.io>.
 
+Please do **NOT** go to #vim on freenode for support. Please contact the
+YouCompleteMe maintainers directly using the [contact details](#contact) below.
 
 License
 -------
@@ -3153,3 +3187,4 @@ This software is licensed under the [GPL v3 license][gpl].
 [vim-nerdtree-tabs]: https://github.com/jistr/vim-nerdtree-tabs
 [++enc]: http://vimdoc.sourceforge.net/htmldoc/editing.html#++enc
 [rustup]: https://www.rustup.rs/
+[contributing-md]: https://github.com/Valloric/YouCompleteMe/blob/master/CONTRIBUTING.md

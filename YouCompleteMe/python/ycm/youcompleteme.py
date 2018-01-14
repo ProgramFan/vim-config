@@ -1,5 +1,4 @@
-# Copyright (C) 2011-2012 Google Inc.
-#               2016-2017 YouCompleteMe contributors
+# Copyright (C) 2011-2018 YouCompleteMe contributors
 #
 # This file is part of YouCompleteMe.
 #
@@ -299,8 +298,6 @@ class YouCompleteMe( object ):
         self._latest_completion_request.Start()
         return
 
-    request_data[ 'working_dir' ] = utils.GetCurrentDirectory()
-
     self._AddExtraConfDataIfNeeded( request_data )
     self._latest_completion_request = CompletionRequest( request_data )
     self._latest_completion_request.Start()
@@ -383,10 +380,8 @@ class YouCompleteMe( object ):
     self.CurrentBuffer().SendParseRequest( extra_data )
 
 
-  def OnBufferUnload( self, deleted_buffer_file ):
-    SendEventNotificationAsync(
-        'BufferUnload',
-        filepath = utils.ToUnicode( deleted_buffer_file ) )
+  def OnBufferUnload( self, deleted_buffer_number ):
+    SendEventNotificationAsync( 'BufferUnload', deleted_buffer_number )
 
 
   def OnBufferVisit( self ):
@@ -652,9 +647,20 @@ class YouCompleteMe( object ):
   def ToggleLogs( self, *filenames ):
     logfiles = self.GetLogfiles()
     if not filenames:
-      vimsupport.PostVimMessage(
-          'Available logfiles are:\n'
-          '{0}'.format( '\n'.join( sorted( list( logfiles ) ) ) ) )
+      sorted_logfiles = sorted( list( logfiles ) )
+      try:
+        logfile_index = vimsupport.SelectFromList(
+          'Which logfile do you wish to open (or close if already open)?',
+          sorted_logfiles )
+      except RuntimeError as e:
+        vimsupport.PostVimMessage( str( e ) )
+        return
+
+      logfile = logfiles[ sorted_logfiles[ logfile_index ] ]
+      if not vimsupport.BufferIsVisibleForFilename( logfile ):
+        self._OpenLogfile( logfile )
+      else:
+        self._CloseLogfile( logfile )
       return
 
     for filename in set( filenames ):

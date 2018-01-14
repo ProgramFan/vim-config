@@ -8,6 +8,17 @@ else
     let s:rtagsAsync = 0
 endif
 
+if has('python')
+    let g:rtagsPy = 'python'
+elseif has('python3')
+    let g:rtagsPy = 'python3'
+else
+    echohl ErrorMsg | echomsg "[vim-rtags] Vim is missing python support" | echohl None
+    finish
+end
+
+
+
 if !exists("g:rtagsRcCmd")
     let g:rtagsRcCmd = "rc"
 endif
@@ -90,15 +101,13 @@ endif
 let s:script_folder_path = escape( expand( '<sfile>:p:h' ), '\' )
 
 function! rtags#InitPython()
-python << endpython
-import vim
+    let s:pyInitScript = "
+\ import vim;
+\ script_folder = vim.eval('s:script_folder_path');
+\ sys.path.insert(0, script_folder);
+\ import vimrtags"
 
-script_folder = vim.eval('s:script_folder_path')
-sys.path.insert(0, script_folder)
-
-import vimrtags
-
-endpython
+    exe g:rtagsPy." ".s:pyInitScript
 endfunction
 
 call rtags#InitPython()
@@ -408,49 +417,6 @@ function! rtags#AddReferences(results, i)
     endfor
     setlocal nomodifiable
     exec (":" . ln)
-endfunction
-
-"
-" param[in] results - Data get by rc diagnose command (XML format)
-"
-function! rtags#DisplayDiagnosticsResults(results)
-    exe 'sign unplace *'
-    exe 'sign define fixit text=F texthl=FixIt'
-    exe 'sign define warning text=W texthl=Warning'
-    exe 'sign define error text=E texthl=Error'
-
-python3 << endpython
-import json
-import xml.etree.ElementTree as ET
-
-tree = ET.fromstring('\n'.join(vim.eval("a:results")))
-file = tree.find('file')
-errors = file.findall('error')
-name = file.get('name')
-
-quickfix_errors = []
-for i, e in enumerate(errors):
-    severity = e.get('severity')
-    if severity == 'skipped':
-        continue
-    line = e.get('line')
-    column = e.get('column')
-    message = e.get('message')
-
-    # strip error prefix
-    s = ' Issue: '
-    index = message.find(s)
-    if index != -1:
-      message = message[index + len(s):]
-
-    error_type = 'E' if severity == 'error' else 'W'
-
-    quickfix_errors.append({'lnum': line, 'col': column, 'nr': i, 'text': message, 'filename': name, 'type': error_type})
-    cmd = 'sign place %d line=%s name=%s file=%s' % (i + 1, line, severity, name)
-    vim.command(cmd)
-
-vim.eval('rtags#DisplayLocations(%s)' % json.dumps(quickfix_errors))
-endpython
 endfunction
 
 function! rtags#getRcCmd()
@@ -960,7 +926,11 @@ function! rtags#CompleteAtCursor(wordStart, base)
 endfunction
 
 function! s:Pyeval( eval_string )
-  return pyeval( a:eval_string )
+  if g:rtagsPy == 'python3'
+      return py3eval( a:eval_string )
+  else
+      return pyeval( a:eval_string )
+  endif
 endfunction
     
 function! s:RcExecuteJobCompletion()

@@ -1,4 +1,3 @@
-map	zeavim.txt	/*map*
 zeavim-commands	zeavim.txt	/*zeavim-commands*
 zeavim-commands:docset	zeavim.txt	/*zeavim-commands:docset*
 zeavim-commands:main	zeavim.txt	/*zeavim-commands:main*
@@ -14,6 +13,7 @@ zeavim-notes	zeavim.txt	/*zeavim-notes*
 zeavim-settings	zeavim.txt	/*zeavim-settings*
 zeavim-settings:args	zeavim.txt	/*zeavim-settings:args*
 zeavim-settings:docset-completion	zeavim.txt	/*zeavim-settings:docset-completion*
+zeavim-settings:focus	zeavim.txt	/*zeavim-settings:focus*
 zeavim-settings:location	zeavim.txt	/*zeavim-settings:location*
 zeavim-settings:new-types	zeavim.txt	/*zeavim-settings:new-types*
 zeavim-settings:no-mapping	zeavim.txt	/*zeavim-settings:no-mapping*

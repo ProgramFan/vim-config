@@ -1,4 +1,4 @@
-# Copyright (C) 2013  Google Inc.
+# Copyright (C) 2013-2018 YouCompleteMe contributors
 #
 # This file is part of YouCompleteMe.
 #
@@ -25,10 +25,11 @@ from builtins import *  # noqa
 import contextlib
 import logging
 import json
+import vim
 from future.utils import native
 from base64 import b64decode, b64encode
 from ycm import vimsupport
-from ycmd.utils import ToBytes, urljoin, urlparse
+from ycmd.utils import ToBytes, urljoin, urlparse, GetCurrentDirectory
 from ycmd.hmac_utils import CreateRequestHmac, CreateHmac, SecureBytesEqual
 from ycmd.responses import ServerError, UnknownExtraConf
 
@@ -152,27 +153,35 @@ class BaseRequest( object ):
   hmac_secret = ''
 
 
-def BuildRequestData( filepath = None ):
-  """Build request for the current buffer or the buffer corresponding to
-  |filepath| if specified."""
-  current_filepath = vimsupport.GetCurrentBufferFilepath()
+def BuildRequestData( buffer_number = None ):
+  """Build request for the current buffer or the buffer with number
+  |buffer_number| if specified."""
+  working_dir = GetCurrentDirectory()
+  current_buffer = vim.current.buffer
 
-  if filepath and current_filepath != filepath:
+  if buffer_number and current_buffer.number != buffer_number:
     # Cursor position is irrelevant when filepath is not the current buffer.
+    buffer_object = vim.buffers[ buffer_number ]
+    filepath = vimsupport.GetBufferFilepath( buffer_object )
     return {
       'filepath': filepath,
       'line_num': 1,
       'column_num': 1,
-      'file_data': vimsupport.GetUnsavedAndSpecifiedBufferData( filepath )
+      'working_dir': working_dir,
+      'file_data': vimsupport.GetUnsavedAndSpecifiedBufferData( buffer_object,
+                                                                filepath )
     }
 
+  current_filepath = vimsupport.GetBufferFilepath( current_buffer )
   line, column = vimsupport.CurrentLineAndColumn()
 
   return {
     'filepath': current_filepath,
     'line_num': line + 1,
     'column_num': column + 1,
-    'file_data': vimsupport.GetUnsavedAndSpecifiedBufferData( current_filepath )
+    'working_dir': working_dir,
+    'file_data': vimsupport.GetUnsavedAndSpecifiedBufferData( current_buffer,
+                                                              current_filepath )
   }
 
 

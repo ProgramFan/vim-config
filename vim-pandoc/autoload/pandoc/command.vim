@@ -1,5 +1,7 @@
 " vim: set fdm=marker et ts=4 sw=4 sts=4:
 
+let s:plugin_root = expand('<sfile>:p:h:h:h')
+
 " Init(): sets up defaults, creates the Pandoc command, requires python support {{{1
 function! pandoc#command#Init()
     " set up defaults {{{2
@@ -21,9 +23,13 @@ function! pandoc#command#Init()
     if !exists("g:pandoc#command#custom_open")
         let g:pandoc#command#custom_open = ""
     endif
+    " open pdf files preferrably? {{{3
+    if !exists("g:pandoc#command#prefer_pdf")
+        let g:pandoc#command#prefer_pdf = 0
+    endif
     " file where to save command templates {{{3
     if !exists("g:pandoc#command#templates_file")
-        let g:pandoc#command#templates_file = split(&runtimepath, ",")[0] . "/vim-pandoc-templates"
+        let g:pandoc#command#templates_file = s:plugin_root . "/templates"
     endif
     " auto-execute pandoc on writes {{{3
     if !exists("g:pandoc#command#autoexec_on_writes")
@@ -93,7 +99,7 @@ function! pandoc#command#PandocComplete(a, c, pos)
         py3 from vim_pandoc.helpparser import PandocInfo
         py3 pandoc_info = PandocInfo()
         let cmd_args = split(a:c, " ", 1)[1:]
-        if len(cmd_args) == 1 && (cmd_args[0] == '' || eval(py3eval('vim.eval("cmd_args[0]").startswith(vim.eval("a:a:))')))
+        if len(cmd_args) == 1 && (cmd_args[0] == '' || py3eval('vim.eval("cmd_args[0]").startswith(vim.eval("a:a"))'))
             return py3eval('list(filter(lambda i: i.startswith(vim.eval("a:a")), sorted(pandoc_info.output_formats + ["pdf"])))')
         endif
         if len(cmd_args) >= 2

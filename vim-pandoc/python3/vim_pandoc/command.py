@@ -46,8 +46,8 @@ class PandocCommand(object):
 
     def __call__(self, args, should_open):
         largs = shlex.split(args)
-        if largs == []:
-            largs = ['html'] # make sure we pass an output format
+        if largs == [] or largs[0].startswith('-'):
+            largs = ['html'] + largs # make sure we pass an output format
         p = self.pandoc_info.build_argument_parser()
         c_vars = vars(p.parse_args(largs))
 
@@ -75,6 +75,8 @@ class PandocCommand(object):
         # 'pdf' is not a valid output format, we pass it to -o instead)
         if output_format != 'pdf':
             c_vars['to'] = output_format
+        else:
+            c_vars['to'] = 'latex'
 
         if output_format == 'pdf':
             # pdf engine
@@ -223,6 +225,12 @@ class PandocCommand(object):
             # nvim's python host doesn't change the directory the same way vim does
             if vim.eval('has("nvim")') == '1':
                 os.chdir(vim.eval('expand("%:p:h")'))
+
+            if vim.eval("g:pandoc#command#prefer_pdf") == "1":
+                maybe_pdf = os.path.splitext(self._output_file_path)[0] + ".pdf"
+                if os.path.splitext(self._output_file_path)[1] in [".tex", "*.latex"] \
+                    and os.path.exists(maybe_pdf):
+                        self._output_file_path = maybe_pdf
 
             if os.path.exists(os.path.abspath(self._output_file_path)) and should_open:
                 # if g:pandoc#command#custom_open is defined and is a valid funcref

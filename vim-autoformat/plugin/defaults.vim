@@ -49,7 +49,7 @@ if !exists('g:formatdef_yapf')
 endif
 
 function! g:YAPFFormatConfigFileExists()
-    return len(findfile(".style.yapf", expand("%:p:h").";")) || len(findfile("setup.cfg", expand("%:p:h").";"))
+    return len(findfile(".style.yapf", expand("%:p:h").";")) || len(findfile("setup.cfg", expand("%:p:h").";")) || filereadable(exists('$XDG_CONFIG_HOME') ? expand('$XDG_CONFIG_HOME/yapf/style') : expand('~/.config/yapf/style'))
 endfunction
 
 if !exists('g:formatters_python')
@@ -189,19 +189,27 @@ if !exists('g:formatdef_eslint_local')
         if empty(l:prog)
             let l:prog = findfile('~/.npm-global/bin/eslint')
         endif
-        let l:cfg = findfile('.eslintrc.js', l:path.";")
-        if empty(l:cfg)
-            let l:cfg = findfile('.eslintrc.yaml', l:path.";")
+        "initial
+        let l:cfg = fnamemodify(findfile('.eslintrc.js', l:path.";"),':p')
+
+        let l:tcfg = fnamemodify(findfile('.eslintrc.yaml', l:path.";"),':p')
+        if len(l:tcfg) > len(l:cfg)
+          let l:cfg = l:tcfg
         endif
-        if empty(l:cfg)
-            let l:cfg = findfile('.eslintrc.yml', l:path.";")
+        let l:tcfg = fnamemodify(findfile('.eslintrc.yml', l:path.";"),':p')
+        if len(l:tcfg) > len(l:cfg)
+          let l:cfg = l:tcfg
         endif
-        if empty(l:cfg)
-            let l:cfg = findfile('.eslintrc.json', l:path.";")
+        let l:tcfg = fnamemodify(findfile('.eslintrc.json', l:path.";"),':p')
+        if len(l:tcfg) > len(l:cfg)
+          let l:cfg = l:tcfg
         endif
-        if empty(l:cfg)
-            let l:cfg = findfile('.eslintrc', l:path.";")
+        let l:tcfg = fnamemodify(findfile('.eslintrc', l:path.";"),':p')
+        if len(l:tcfg) > len(l:cfg)
+          let l:cfg = l:tcfg
         endif
+
+        " This is in case we are outside home folder
         if empty(l:cfg)
             let l:cfg = findfile('~/.eslintrc.js')
         endif
